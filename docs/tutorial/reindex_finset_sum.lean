@@ -1,3 +1,12 @@
+/-
+Copyright (c) 2018 Scott Morrison. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Scott Morrison
+
+This file demonstrates the use of lemmas `Ico_sum_split_(first|last)`,
+and `Ico_sum_reindex_(left|right)`, for manipulating sums over intervals in
+the natural numbers.
+-/
 import algebra.big_operators
 import data.nat.choose
 import tactic.linarith
