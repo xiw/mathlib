@@ -14,7 +14,8 @@ Each interval has the name `I` + letter for left side + letter for right side
 
 TODO: This is just the beginning; a lot of rules are missing
 -/
-import data.set.lattice algebra.order algebra.order_functions
+import algebra.order algebra.order_functions
+import tactic.tauto
 
 namespace set
 
@@ -283,10 +284,10 @@ begin
     apply exists.elim hz,
     intros z' hz',
     rw [←hz'.2],
-    simp at *,
+    simp only [mem_Ioi, neg_lt_neg_iff],
     exact hz'.1 },
   { intros hz,
-    simp at *,
+    simp only [mem_image, mem_Iio],
     use -z,
     simp [hz],
     exact neg_lt.1 hz }
@@ -301,10 +302,10 @@ begin
     apply exists.elim hz,
     intros z' hz',
     rw [←hz'.2],
-    simp at *,
+    simp only [neg_le_neg_iff, mem_Ici],
     exact hz'.1 },
   { intros hz,
-    simp at *,
+    simp only [mem_image, mem_Iic],
     use -z,
     simp [hz],
     exact neg_le.1 hz }

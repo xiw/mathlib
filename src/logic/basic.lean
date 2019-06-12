@@ -9,7 +9,6 @@ Classical versions are in the namespace "classical".
 Note: in the presence of automation, this whole file may be unnecessary. On the other hand,
 maybe it is useful for writing automation.
 -/
-import data.prod tactic.cache
 
 /-
     miscellany
@@ -415,8 +414,7 @@ theorem not_forall {p : α → Prop}
 
 @[simp] theorem not_forall_not [decidable (∃ x, p x)] :
   (¬ ∀ x, ¬ p x) ↔ ∃ x, p x :=
-by haveI := decidable_of_iff (¬ ∃ x, p x) not_exists;
-   exact not_iff_comm.1 not_exists
+(@not_iff_comm _ _ _ (decidable_of_iff (¬ ∃ x, p x) not_exists)).1 not_exists
 
 @[simp] theorem not_exists_not [∀ x, decidable (p x)] :
   (¬ ∃ x, ¬ p x) ↔ ∀ x, p x :=
@@ -486,6 +484,13 @@ theorem forall_or_distrib_left {q : Prop} {p : α → Prop} [decidable q] :
 ⟨λ h, if hq : q then or.inl hq else or.inr $ λ x, (h x).resolve_left hq,
   forall_or_of_or_forall⟩
 
+/-- A predicate holds everywhere on the image of a surjective functions iff
+    it holds everywhere. -/
+theorem forall_iff_forall_surj
+  {α β : Type*} {f : α → β} (h : function.surjective f) {P : β → Prop} :
+  (∀ a, P (f a)) ↔ ∀ b, P b :=
+⟨λ ha b, by cases h b with a hab; rw ←hab; exact ha a, λ hb a, hb $ f a⟩
+
 @[simp] theorem exists_prop {p q : Prop} : (∃ h : p, q) ↔ p ∧ q :=
 ⟨λ ⟨h₁, h₂⟩, ⟨h₁, h₂⟩, λ ⟨h₁, h₂⟩, ⟨h₁, h₂⟩⟩
 
@@ -542,9 +547,9 @@ protected lemma not_not {p : Prop} : ¬¬p ↔ p := not_not
 
 protected lemma not_and_distrib {p q : Prop}: ¬(p ∧ q) ↔ ¬p ∨ ¬q := not_and_distrib
 
-protected lemma imp_iff_not_or {a b : Prop} : a → b ↔ ¬a ∨ b := imp_iff_not_or 
+protected lemma imp_iff_not_or {a b : Prop} : a → b ↔ ¬a ∨ b := imp_iff_not_or
 
-lemma iff_iff_not_or_and_or_not {a b : Prop} : (a ↔ b) ↔ ((¬a ∨ b) ∧ (a ∨ ¬b)) := 
+lemma iff_iff_not_or_and_or_not {a b : Prop} : (a ↔ b) ↔ ((¬a ∨ b) ∧ (a ∨ ¬b)) :=
 begin
   rw [iff_iff_implies_and_implies a b],
   simp only [imp_iff_not_or, or.comm]
@@ -560,7 +565,7 @@ noncomputable theorem dec_eq (α : Sort*) : decidable_eq α := by apply_instance
 noncomputable def {u} exists_cases {C : Sort u} (H0 : C) (H : ∀ a, p a → C) : C :=
 if h : ∃ a, p a then H (classical.some h) (classical.some_spec h) else H0
 
-lemma some_spec2 {α : Type*} {p : α → Prop} {h : ∃a, p a}
+lemma some_spec2 {α : Sort*} {p : α → Prop} {h : ∃a, p a}
   (q : α → Prop) (hpq : ∀a, p a → q a) : q (some h) :=
 hpq _ $ some_spec _
 

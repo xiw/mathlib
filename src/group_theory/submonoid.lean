@@ -41,6 +41,13 @@ theorem multiplicative.is_submonoid_iff
   {s : set β} : @is_submonoid (multiplicative β) _ s ↔ is_add_submonoid s :=
 ⟨λ ⟨h₁, h₂⟩, ⟨h₁, @h₂⟩, λ h, by resetI; apply_instance⟩
 
+@[to_additive is_add_submonoid.inter]
+lemma is_submonoid.inter (s₁ s₂ : set α) [is_submonoid s₁] [is_submonoid s₂] :
+  is_submonoid (s₁ ∩ s₂) :=
+{ one_mem := ⟨is_submonoid.one_mem _, is_submonoid.one_mem _⟩,
+  mul_mem := λ x y hx hy,
+    ⟨is_submonoid.mul_mem hx.1 hy.1, is_submonoid.mul_mem hx.2 hy.2⟩ }
+
 lemma is_submonoid_Union_of_directed {ι : Type*} [hι : nonempty ι]
   (s : ι → set α) [∀ i, is_submonoid (s i)]
   (directed : ∀ i j, ∃ k, s i ⊆ s k ∧ s j ⊆ s k) :
@@ -224,6 +231,18 @@ theorem closure_singleton {x : α} : closure ({x} : set α) = powers x :=
 set.eq_of_subset_of_subset (closure_subset $ set.singleton_subset_iff.2 $ powers.self_mem) $
   is_submonoid.power_subset $ set.singleton_subset_iff.1 $ subset_closure
 
+lemma image_closure {β : Type*} [monoid β] (f : α → β) [is_monoid_hom f] (s : set α) :
+  f '' closure s = closure (f '' s) :=
+le_antisymm
+  begin
+    rintros _ ⟨x, hx, rfl⟩,
+    apply in_closure.rec_on hx; intros,
+    { solve_by_elim [subset_closure, set.mem_image_of_mem] },
+    { rw [is_monoid_hom.map_one f], apply is_submonoid.one_mem },
+    { rw [is_monoid_hom.map_mul f], solve_by_elim [is_submonoid.mul_mem] }
+  end
+  (closure_subset $ set.image_subset _ subset_closure)
+
 theorem exists_list_of_mem_closure {s : set α} {a : α} (h : a ∈ closure s) :
   (∃l:list α, (∀x∈l, x ∈ s) ∧ l.prod = a) :=
 begin
@@ -289,6 +308,19 @@ theorem in_closure.rec_on {s : set β} {C : β → Prop}
   (H3 : ∀ {a b : β}, a ∈ closure s → b ∈ closure s → C a → C b → C (a + b)) :
   C a :=
 monoid.in_closure.rec_on H (λ _, H1) H2 (λ _ _, H3)
+
+lemma image_closure {γ : Type*} [add_monoid γ] (f : β → γ) [is_add_monoid_hom f] (s : set β) :
+  f '' closure s = closure (f '' s) :=
+le_antisymm
+  begin
+    rintros _ ⟨x, hx, rfl⟩,
+    apply in_closure.rec_on hx; intros,
+    { solve_by_elim [subset_closure, set.mem_image_of_mem] },
+    { rw [is_add_monoid_hom.map_zero f], apply is_add_submonoid.zero_mem },
+    { rw [is_add_monoid_hom.map_add f], solve_by_elim [is_add_submonoid.add_mem] }
+  end
+  (closure_subset $ set.image_subset _ subset_closure)
+attribute [to_additive add_monoid.image_closure] monoid.image_closure
 
 theorem mem_closure_union_iff {β : Type*} [add_comm_monoid β] {s t : set β} {x : β} :
   x ∈ closure (s ∪ t) ↔ ∃ y ∈ closure s, ∃ z ∈ closure t, y + z = x :=

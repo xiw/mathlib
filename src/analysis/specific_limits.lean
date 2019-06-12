@@ -57,8 +57,8 @@ by_cases
   (assume : r = 0, (tendsto_add_at_top_iff_nat 1).mp $ by simp [pow_succ, this, tendsto_const_nhds])
   (assume : r ≠ 0,
     have tendsto (λn, (r⁻¹ ^ n)⁻¹) at_top (nhds 0),
-      from (tendsto_pow_at_top_at_top_of_gt_1 $ one_lt_inv (lt_of_le_of_ne h₁ this.symm) h₂).comp
-        tendsto_inverse_at_top_nhds_0,
+      from tendsto.comp tendsto_inverse_at_top_nhds_0
+        (tendsto_pow_at_top_at_top_of_gt_1 $ one_lt_inv (lt_of_le_of_ne h₁ this.symm) h₂),
     tendsto.congr' (univ_mem_sets' $ by simp *) this)
 
 lemma tendsto_pow_at_top_nhds_0_of_lt_1_normed_field {K : Type*} [normed_field K] {ξ : K}
@@ -77,7 +77,7 @@ tendsto_coe_nat_real_at_top_iff.1 $
   by simpa using tendsto_pow_at_top_at_top_of_gt_1 hr
 
 lemma tendsto_inverse_at_top_nhds_0_nat : tendsto (λ n : ℕ, (n : ℝ)⁻¹) at_top (nhds 0) :=
-tendsto.comp (tendsto_coe_nat_real_at_top_iff.2 tendsto_id) tendsto_inverse_at_top_nhds_0
+tendsto.comp tendsto_inverse_at_top_nhds_0 (tendsto_coe_nat_real_at_top_iff.2 tendsto_id)
 
 lemma tendsto_one_div_at_top_nhds_0_nat : tendsto (λ n : ℕ, 1/(n : ℝ)) at_top (nhds 0) :=
 by simpa only [inv_eq_one_div] using tendsto_inverse_at_top_nhds_0_nat
@@ -98,7 +98,22 @@ have tendsto (λn, (r ^ n - 1) * (r - 1)⁻¹) at_top (nhds ((0 - 1) * (r - 1)�
 (has_sum_iff_tendsto_nat_of_nonneg (pow_nonneg h₁) _).mpr $
   by simp [neg_inv, geom_sum, div_eq_mul_inv, *] at *
 
-lemma has_sum_geometric_two (a : ℝ) : has_sum (λn:ℕ, (a / 2) / 2 ^ n) a :=
+lemma summable_geometric {r : ℝ} (h₁ : 0 ≤ r) (h₂ : r < 1) : summable (λn:ℕ, r ^ n) :=
+⟨_, has_sum_geometric h₁ h₂⟩
+
+lemma tsum_geometric {r : ℝ} (h₁ : 0 ≤ r) (h₂ : r < 1) : (∑n:ℕ, r ^ n) = 1 / (1 - r) :=
+tsum_eq_has_sum (has_sum_geometric h₁ h₂)
+
+lemma has_sum_geometric_two : has_sum (λn:ℕ, ((1:ℝ)/2) ^ n) 2 :=
+by convert has_sum_geometric _ _; norm_num
+
+lemma summable_geometric_two : summable (λn:ℕ, ((1:ℝ)/2) ^ n) :=
+⟨_, has_sum_geometric_two⟩
+
+lemma tsum_geometric_two : (∑n:ℕ, ((1:ℝ)/2) ^ n) = 2 :=
+tsum_eq_has_sum has_sum_geometric_two
+
+lemma has_sum_geometric_two' (a : ℝ) : has_sum (λn:ℕ, (a / 2) / 2 ^ n) a :=
 begin
   convert has_sum_mul_left (a / 2) (has_sum_geometric
     (le_of_lt one_half_pos) one_half_lt_one),
@@ -111,7 +126,7 @@ def pos_sum_of_encodable {ε : ℝ} (hε : 0 < ε)
   (ι) [encodable ι] : {ε' : ι → ℝ // (∀ i, 0 < ε' i) ∧ ∃ c, has_sum ε' c ∧ c ≤ ε} :=
 begin
   let f := λ n, (ε / 2) / 2 ^ n,
-  have hf : has_sum f ε := has_sum_geometric_two _,
+  have hf : has_sum f ε := has_sum_geometric_two' _,
   have f0 : ∀ n, 0 < f n := λ n, div_pos (half_pos hε) (pow_pos two_pos _),
   refine ⟨f ∘ encodable.encode, λ i, f0 _, _⟩,
   rcases summable_comp_of_summable_of_injective f (summable_spec hf) (@encodable.encode_injective ι _)

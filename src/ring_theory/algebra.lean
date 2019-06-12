@@ -205,11 +205,17 @@ protected def id : A →ₐ[R] A :=
 { to_fun := id, commutes' := λ _, rfl }
 variables {R A}
 
+@[simp] lemma id_to_linear_map :
+  (alg_hom.id R A).to_linear_map = @linear_map.id R A _ _ _ := rfl
+
 @[simp] lemma id_apply (p : A) : alg_hom.id R A p = p := rfl
 
 def comp (φ₁ : B →ₐ[R] C) (φ₂ : A →ₐ[R] B) : A →ₐ C :=
 { to_fun := φ₁ ∘ φ₂,
   commutes' := λ r, by rw [function.comp_apply, φ₂.commutes, φ₁.commutes] }
+
+@[simp] lemma comp_to_linear_map (f : A →ₐ[R] B) (g : B →ₐ[R] C) :
+  (g.comp f).to_linear_map = g.to_linear_map.comp f.to_linear_map := rfl
 
 @[simp] lemma comp_apply (φ₁ : B →ₐ[R] C) (φ₂ : A →ₐ[R] B) (p : A) :
   φ₁.comp φ₂ p = φ₁ (φ₂ p) := rfl
@@ -418,7 +424,10 @@ def to_submodule : submodule R A :=
   add := λ x y hx hy, (⟨x, hx⟩ + ⟨y, hy⟩ : S).2,
   smul := λ c x hx, (algebra.smul_def c x).symm ▸ (⟨algebra_map A c, S.range_le ⟨c, rfl⟩⟩ * ⟨x, hx⟩:S).2 }
 
-instance to_submodule.is_subring : is_subring (S.to_submodule : set A) := S.2
+instance coe_to_submodule : has_coe (subalgebra R A) (submodule R A) :=
+⟨to_submodule⟩
+
+instance to_submodule.is_subring : is_subring ((S : submodule R A) : set A) := S.2
 
 instance : partial_order (subalgebra R A) :=
 { le := λ S T, S.carrier ≤ T.carrier,
@@ -432,6 +441,8 @@ def comap {R : Type u} {S : Type v} {A : Type w}
 { carrier := (iSB : set A),
   subring := iSB.is_subring,
   range_le := λ a ⟨r, hr⟩, hr ▸ iSB.range_le ⟨_, rfl⟩ }
+
+set_option class.instance_max_depth 48
 
 def under {R : Type u} {A : Type v} [comm_ring R] [comm_ring A]
   {i : algebra R A} (S : subalgebra R A)
