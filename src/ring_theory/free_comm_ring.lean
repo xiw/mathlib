@@ -1,5 +1,14 @@
+/-
+Copyright (c) 2019 Kenny Lau. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Kenny Lau, Johan Commelin
+-/
+
 import group_theory.free_abelian_group data.equiv.algebra data.equiv.functor data.polynomial
 import ring_theory.ideal_operations ring_theory.free_ring
+
+noncomputable theory
+local attribute [instance, priority 100] classical.prop_decidable
 
 universes u v
 
@@ -99,6 +108,102 @@ lift $ of ∘ f
 @[simp] lemma map_mul (x y) : map f (x * y) = map f x * map f y := lift_mul _ _ _
 @[simp] lemma map_pow (x) (n : ℕ) : map f (x ^ n) = (map f x) ^ n := lift_pow _ _ _
 
+def is_supported (x : free_comm_ring α) (s : set α) : Prop :=
+x ∈ ring.closure (of '' s)
+
+section is_supported
+variables {x y : free_comm_ring α} {s t : set α}
+
+theorem is_supported_upwards (hs : is_supported x s) (hst : s ⊆ t) :
+  is_supported x t :=
+ring.closure_mono (set.mono_image hst) hs
+
+theorem is_supported_add (hxs : is_supported x s) (hys : is_supported y s) :
+  is_supported (x + y) s :=
+is_add_submonoid.add_mem hxs hys
+
+theorem is_supported_neg (hxs : is_supported x s) :
+  is_supported (-x) s :=
+is_add_subgroup.neg_mem hxs
+
+theorem is_supported_sub (hxs : is_supported x s) (hys : is_supported y s) :
+  is_supported (x - y) s :=
+is_add_subgroup.sub_mem _ _ _ hxs hys
+
+theorem is_supported_mul (hxs : is_supported x s) (hys : is_supported y s) :
+  is_supported (x * y) s :=
+is_submonoid.mul_mem hxs hys
+
+theorem is_supported_zero : is_supported 0 s :=
+is_add_submonoid.zero_mem _
+
+theorem is_supported_one : is_supported 1 s :=
+is_submonoid.one_mem _
+
+theorem is_supported_int {i : ℤ} {s : set α} : is_supported ↑i s :=
+int.induction_on i is_supported_zero
+  (λ i hi, by rw [int.cast_add, int.cast_one]; exact is_supported_add hi is_supported_one)
+  (λ i hi, by rw [int.cast_sub, int.cast_one]; exact is_supported_sub hi is_supported_one)
+
+end is_supported
+
+def restriction (s : set α) [decidable_pred s] (x : free_comm_ring α) : free_comm_ring s :=
+lift (λ p, if H : p ∈ s then of ⟨p, H⟩ else 0) x
+
+section restriction
+variables (s : set α) [decidable_pred s] (x y : free_comm_ring α)
+@[simp] lemma restriction_of (p) : restriction s (of p) = if H : p ∈ s then of ⟨p, H⟩ else 0 := lift_of _ _
+@[simp] lemma restriction_zero : restriction s 0 = 0 := lift_zero _
+@[simp] lemma restriction_one : restriction s 1 = 1 := lift_one _
+@[simp] lemma restriction_add : restriction s (x + y) = restriction s x + restriction s y := lift_add _ _ _
+@[simp] lemma restriction_neg : restriction s (-x) = -restriction s x := lift_neg _ _
+@[simp] lemma restriction_sub : restriction s (x - y) = restriction s x - restriction s y := lift_sub _ _ _
+@[simp] lemma restriction_mul : restriction s (x * y) = restriction s x * restriction s y := lift_mul _ _ _
+end restriction
+
+theorem is_supported_of {p} {s : set α} : is_supported (of p) s ↔ p ∈ s :=
+suffices is_supported (of p) s → p ∈ s, from ⟨this, λ hps, ring.subset_closure ⟨p, hps, rfl⟩⟩,
+assume hps : is_supported (of p) s, begin
+  classical,
+  have : ∀ x, is_supported x s →
+    ∃ (n : ℤ), lift (λ a, if a ∈ s then (0 : polynomial ℤ) else polynomial.X) x = n,
+  { intros x hx, refine ring.in_closure.rec_on hx _ _ _ _,
+    { use 1, rw [lift_one], norm_cast },
+    { use -1, rw [lift_neg, lift_one], norm_cast },
+    { rintros _ ⟨z, hzs, rfl⟩ _ _, use 0, rw [lift_mul, lift_of, if_pos hzs, zero_mul], norm_cast },
+    { rintros x y ⟨q, hq⟩ ⟨r, hr⟩, refine ⟨q+r, _⟩, rw [lift_add, hq, hr], norm_cast } },
+  specialize this (of p) hps, rw [lift_of] at this, split_ifs at this, { exact h },
+  exfalso, apply ne.symm int.zero_ne_one,
+  rcases this with ⟨w, H⟩, rw polynomial.int_cast_eq_C at H,
+  have : polynomial.X.coeff 1 = (polynomial.C ↑w).coeff 1, by rw H,
+  rwa [polynomial.coeff_C, if_neg one_ne_zero, polynomial.coeff_X, if_pos rfl] at this,
+  apply_instance
+end
+
+theorem map_subtype_val_restriction {x} (s : set α) [decidable_pred s] (hxs : is_supported x s) :
+  map subtype.val (restriction s x) = x :=
+begin
+  refine ring.in_closure.rec_on hxs _ _ _ _,
+  { rw restriction_one, refl },
+  { rw [restriction_neg, map_neg, restriction_one], refl },
+  { rintros _ ⟨p, hps, rfl⟩ n ih, rw [restriction_mul, restriction_of, dif_pos hps, map_mul, map_of, ih] },
+  { intros x y ihx ihy, rw [restriction_add, map_add, ihx, ihy] }
+end
+
+theorem exists_finite_support (x : free_comm_ring α) : ∃ s : set α, set.finite s ∧ is_supported x s :=
+free_comm_ring.induction_on x
+  ⟨∅, set.finite_empty, is_supported_neg is_supported_one⟩
+  (λ p, ⟨{p}, set.finite_singleton p, is_supported_of.2 $ finset.mem_singleton_self _⟩)
+  (λ x y ⟨s, hfs, hxs⟩ ⟨t, hft, hxt⟩, ⟨s ∪ t, set.finite_union hfs hft, is_supported_add
+    (is_supported_upwards hxs $ set.subset_union_left s t)
+    (is_supported_upwards hxt $ set.subset_union_right s t)⟩)
+  (λ x y ⟨s, hfs, hxs⟩ ⟨t, hft, hxt⟩, ⟨s ∪ t, set.finite_union hfs hft, is_supported_mul
+    (is_supported_upwards hxs $ set.subset_union_left s t)
+    (is_supported_upwards hxt $ set.subset_union_right s t)⟩)
+
+theorem exists_finset_support (x : free_comm_ring α) : ∃ s : finset α, is_supported x ↑s :=
+let ⟨s, hfs, hxs⟩ := exists_finite_support x in ⟨hfs.to_finset, by rwa finset.coe_to_finset⟩
+
 end free_comm_ring
 
 
@@ -164,34 +269,33 @@ begin
 end
 
 def subsingleton_equiv_free_comm_ring [subsingleton α] :
-  free_ring α ≃r free_comm_ring α :=
-{ to_equiv := @functor.map_equiv _ _ free_abelian_group _ _ $ multiset.subsingleton_equiv α,
-  hom :=
+  free_ring α ≃+* free_comm_ring α :=
+@ring_equiv.of' (free_ring α) (free_comm_ring α) _ _
+  (@functor.map_equiv _ _ free_abelian_group _ _ $ multiset.subsingleton_equiv α) $
   begin
     delta functor.map_equiv,
     rw congr_arg is_ring_hom _,
     work_on_goal 2 { symmetry, exact coe_eq α },
     apply_instance
-  end }
+  end
 
 instance [subsingleton α] : comm_ring (free_ring α) :=
 { mul_comm := λ x y,
   by rw [← (subsingleton_equiv_free_comm_ring α).left_inv (y * x),
-        is_ring_hom.map_mul ((subsingleton_equiv_free_comm_ring α).to_equiv).to_fun,
+        is_ring_hom.map_mul ((subsingleton_equiv_free_comm_ring α)).to_fun,
         mul_comm,
-        ← is_ring_hom.map_mul ((subsingleton_equiv_free_comm_ring α).to_equiv).to_fun,
+        ← is_ring_hom.map_mul ((subsingleton_equiv_free_comm_ring α)).to_fun,
         (subsingleton_equiv_free_comm_ring α).left_inv],
   .. free_ring.ring α }
 
 end free_ring
 
-variables [decidable_eq α]
-
 def free_comm_ring_equiv_mv_polynomial_int :
-  free_comm_ring α ≃r mv_polynomial α ℤ :=
+  free_comm_ring α ≃+* mv_polynomial α ℤ :=
 { to_fun  := free_comm_ring.lift $ λ a, mv_polynomial.X a,
   inv_fun := mv_polynomial.eval₂ coe free_comm_ring.of,
-  hom := by apply_instance,
+  map_mul' := λ _ _, is_ring_hom.map_mul _,
+  map_add' := λ _ _, is_ring_hom.map_add _,
   left_inv :=
   begin
     intro x,
@@ -199,14 +303,17 @@ def free_comm_ring_equiv_mv_polynomial_int :
       @@is_ring_hom.is_semiring_hom _ _ _ (@@int.cast.is_ring_hom _),
     refine free_abelian_group.induction_on x rfl _ _ _,
     { intro s,
-      refine multiset.induction_on s rfl _,
-      intros hd tl ih,
-      show mv_polynomial.eval₂ coe free_comm_ring.of
-        (free_comm_ring.lift (λ a, mv_polynomial.X a)
-        (free_comm_ring.of hd * free_abelian_group.of tl)) =
-        free_comm_ring.of hd * free_abelian_group.of tl,
-      rw [free_comm_ring.lift_mul, free_comm_ring.lift_of,
-        mv_polynomial.eval₂_mul, mv_polynomial.eval₂_X, ih] },
+      refine multiset.induction_on s _ _,
+      { unfold free_comm_ring.lift,
+        rw [free_abelian_group.lift.of],
+        exact mv_polynomial.eval₂_one _ _ },
+      { intros hd tl ih,
+        show mv_polynomial.eval₂ coe free_comm_ring.of
+          (free_comm_ring.lift (λ a, mv_polynomial.X a)
+          (free_comm_ring.of hd * free_abelian_group.of tl)) =
+          free_comm_ring.of hd * free_abelian_group.of tl,
+        rw [free_comm_ring.lift_mul, free_comm_ring.lift_of,
+          mv_polynomial.eval₂_mul, mv_polynomial.eval₂_X, ih] } },
     { intros s ih,
       rw [free_comm_ring.lift_neg, ← neg_one_mul, mv_polynomial.eval₂_mul,
         ← mv_polynomial.C_1, ← mv_polynomial.C_neg, mv_polynomial.eval₂_C,
@@ -233,16 +340,16 @@ def free_comm_ring_equiv_mv_polynomial_int :
         free_comm_ring.lift_mul, free_comm_ring.lift_of, ih] }
   end }
 
-def free_comm_ring_pempty_equiv_int : free_comm_ring pempty.{u+1} ≃r ℤ :=
+def free_comm_ring_pempty_equiv_int : free_comm_ring pempty.{u+1} ≃+* ℤ :=
 ring_equiv.trans (free_comm_ring_equiv_mv_polynomial_int _) (mv_polynomial.pempty_ring_equiv _)
 
-def free_comm_ring_punit_equiv_polynomial_int : free_comm_ring punit.{u+1} ≃r polynomial ℤ :=
+def free_comm_ring_punit_equiv_polynomial_int : free_comm_ring punit.{u+1} ≃+* polynomial ℤ :=
 ring_equiv.trans (free_comm_ring_equiv_mv_polynomial_int _) (mv_polynomial.punit_ring_equiv _)
 
 open free_ring
 
-def free_ring_pempty_equiv_int : free_ring pempty.{u+1} ≃r ℤ :=
+def free_ring_pempty_equiv_int : free_ring pempty.{u+1} ≃+* ℤ :=
 ring_equiv.trans (subsingleton_equiv_free_comm_ring _) free_comm_ring_pempty_equiv_int
 
-def free_ring_punit_equiv_polynomial_int : free_ring punit.{u+1} ≃r polynomial ℤ :=
+def free_ring_punit_equiv_polynomial_int : free_ring punit.{u+1} ≃+* polynomial ℤ :=
 ring_equiv.trans (subsingleton_equiv_free_comm_ring _) free_comm_ring_punit_equiv_polynomial_int
