@@ -295,7 +295,6 @@ begin
   refine nat.sub_cancel _ _ h,
   simp at xh yh,
   cases xh, cases yh,
-  { apply le_trans, solve_by_elim {all_goals := true}, },
   suggest,
   -- FIXME finish
 end
