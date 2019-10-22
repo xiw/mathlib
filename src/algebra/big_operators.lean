@@ -285,6 +285,28 @@ lemma prod_Ico_add (f : ℕ → β) (m n k : ℕ) :
   (Ico m n).prod (λ l, f (k + l)) = (Ico (m + k) (n + k)).prod f :=
 Ico.image_add m n k ▸ eq.symm $ prod_image $ λ x hx y hy h, nat.add_left_cancel h
 
+lemma sum_Ico_sub {δ : Type*} [add_comm_monoid δ] (f : ℕ → δ) (m n k : ℕ) (h : k ≤ m) :
+  (Ico m n).sum (λ l, f (l - k)) = (Ico (m - k) (n - k)).sum f :=
+begin
+  rw ←Ico.image_sub m n k h,
+  symmetry,
+  apply sum_image,
+  intros x xh y yh h,
+  refine nat.sub_cancel _ _ h,
+  simp at xh yh,
+  cases xh, cases yh,
+  { apply le_trans, solve_by_elim {all_goals := true}, },
+  suggest,
+  -- FIXME finish
+end
+
+-- TODO additive version
+
+@[to_additive]
+lemma prod_Ico_add (f : ℕ → β) (m n k : ℕ) :
+  (Ico m n).prod (λ l, f (k + l)) = (Ico (m + k) (n + k)).prod f :=
+Ico.image_add m n k ▸ eq.symm $ prod_image $ λ x hx y hy h, nat.add_left_cancel h
+
 @[to_additive]
 lemma prod_Ico_consecutive (f : ℕ → β) {m n k : ℕ} (hmn : m ≤ n) (hnk : n ≤ k) :
   (Ico m n).prod f * (Ico n k).prod f = (Ico m k).prod f :=
@@ -395,15 +417,6 @@ lemma prod_eq_filter_prod_mul_filter_not_prod [decidable_eq α] [comm_monoid β]
   s.prod f = (s.filter P).prod f * (s.filter (λ a, ¬ P a)).prod f :=
 by rw [← finset.prod_union (finset.filter_inter_filter_neg_eq s), finset.filter_union_filter_neg_eq]
 
-@[to_additive finset.Ico_sum_split]
-lemma Ico_prod_split (l n m : ℕ) (h₁ : n ≤ l) (h₂ : l ≤ m) (f : ℕ → β) :
-  (Ico n m).prod f = (Ico n l).prod f * (Ico l m).prod f :=
-begin
-  rw ← Ico.union_consecutive h₁ h₂,
-  rw prod_union,
-  simp,
-end
-
 -- `to_additive` chokes on this one, so we reprove it below
 lemma Ico_prod_split_first (n m : ℕ) (h : n < m) (f : ℕ → β) :
   (Ico n m).prod f = f n * (Ico (n+1) m).prod f :=
@@ -422,31 +435,6 @@ lemma Ico_prod_split_last (n m : ℕ) (h : m > n) (f : ℕ → β) :
 begin
   rw [Ico.succ_top' h, prod_insert, mul_comm],
   simp,
-end
-
-@[to_additive finset.Ico_sum_reindex_right]
-lemma Ico_prod_reindex_right (k n m : ℕ) (f : ℕ → β) :
-  (Ico n m).prod f = (Ico (n+k) (m+k)).prod (λ x, f (x - k)) :=
-begin
-  rw ←Ico.image_add,
-  have inj : ∀ (x : ℕ), x ∈ Ico n m → ∀ (y : ℕ), y ∈ Ico n m → k + x = k + y → x = y :=
-    λ _ _ _ _, add_left_cancel,
-  rw prod_image inj,
-  simp,
-end.
-
-local attribute [-simp] add_comm
-
-@[to_additive finset.Ico_sum_reindex_left]
-lemma Ico_prod_reindex_left (k n m : ℕ) (h : k ≤ n) (f : ℕ → β) :
-  (Ico n m).prod f = (Ico (n-k) (m-k)).prod (λ x, f (x + k)) :=
-begin
-  rw ←Ico.image_sub _ _ _ h,
-  have inj : ∀ (x : ℕ), x ∈ Ico n m → ∀ (y : ℕ), y ∈ Ico n m → x - k = y - k → x = y :=
-    λ x mx y my w, nat.sub_cancel (le_trans h (Ico.mem.1 mx).1) (le_trans h (Ico.mem.1 my).1) w,
-  rw prod_image inj,
-  refine finset.prod_congr rfl (assume a ha, _),
-  rw nat.sub_add_cancel (le_trans h (Ico.mem.1 ha).1),
 end
 
 end comm_monoid
