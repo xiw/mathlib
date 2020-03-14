@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Johannes Hölzl, Mitchell Rowett, Scott Morrison, Johan Commelin, Mario Carneiro,
   Michael Howes
 -/
-import group_theory.submonoid
+import group_theory.submonoid algebra.conj
 open set function
 
 variables {G : Type*} {H : Type*} {A : Type*} {a a₁ a₂ b c: G}
@@ -180,7 +180,7 @@ end prio
 @[to_additive normal_add_subgroup_of_add_comm_group]
 lemma normal_subgroup_of_comm_group [comm_group G] (s : set G) [hs : is_subgroup s] :
   normal_subgroup s :=
-{ normal := λ n hn g, by rwa [mul_right_comm, mul_right_inv, one_mul],
+{ normal := λ n hn g, by rwa [mul_right_comm, mul_inv_self, one_mul],
   ..hs }
 
 lemma additive.normal_add_subgroup [group G]
@@ -615,7 +615,7 @@ lemma conj_mem_conjugates_of_set {x c : G} :
 λ H,
 begin
   rcases (mem_conjugates_of_set_iff.1 H) with ⟨a,h₁,h₂⟩,
-  exact mem_conjugates_of_set_iff.2 ⟨a, h₁, is_conj_trans h₂ ⟨c,rfl⟩⟩,
+  exact mem_conjugates_of_set_iff.2 ⟨a, h₁, h₂.trans ⟨c,rfl⟩⟩,
 end
 
 /-- The normal closure of a set s is the subgroup closure of all the conjugates of
@@ -639,9 +639,9 @@ begin
   induction h with x hx x hx ihx x y hx hy ihx ihy,
   {exact (conjugates_of_set_subset_normal_closure (conj_mem_conjugates_of_set hx))},
   {simpa using (normal_closure.is_subgroup s).one_mem},
-  {rw ←conj_inv,
+  {rw [← conj_apply, (conj G g).map_inv],
    exact (is_subgroup.inv_mem ihx)},
-  {rw ←conj_mul,
+  {rw [← conj_apply, (conj G g).map_mul],
    exact (is_submonoid.mul_mem ihx ihy)},
 end ⟩
 

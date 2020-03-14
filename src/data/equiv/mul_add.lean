@@ -63,6 +63,9 @@ lemma map_mul (f : M ≃* N) : ∀ x y, f (x * y) = f x * f y := f.map_mul'
 @[to_additive]
 instance (h : M ≃* N) : is_mul_hom h := ⟨h.map_mul⟩
 
+@[simp, to_additive]
+lemma coe_mk (f g h₁ h₂ h₃) : ⇑(⟨f, g, h₁, h₂, h₃⟩ : M ≃* N) = f := rfl
+
 /-- Makes a multiplicative isomorphism from a bijection which preserves multiplication. -/
 @[to_additive]
 def mk' (f : M ≃ N) (h : ∀ x y, f (x * y) = f x * f y) : M ≃* N :=
@@ -176,7 +179,6 @@ end mul_equiv
 lemma add_equiv.map_sub [add_group A] [add_group B] (h : A ≃+ B) (x y : A) :
   h (x - y) = h x - h y :=
 h.to_add_monoid_hom.map_sub x y
-
 
 /-- The group of multiplicative automorphisms. -/
 @[to_additive "The group of additive automorphisms."]

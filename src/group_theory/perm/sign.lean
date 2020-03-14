@@ -5,6 +5,7 @@ Authors: Chris Hughes
 -/
 import data.fintype.basic
 import algebra.big_operators
+import algebra.conj
 
 universes u v
 open equiv function fintype finset
@@ -137,7 +138,8 @@ lemma gpow_apply_eq_of_apply_apply_eq_self {f : perm α} {x : α} (hffx : f (f x
 
 variable [decidable_eq α]
 
-def support [fintype α] (f : perm α) := univ.filter (λ x, f x ≠ x)
+/-- Support of a permutation is the set of elements `x` such that `f x ≠ x`. -/
+def support [fintype α] (f : perm α) : finset α := univ.filter (λ x, f x ≠ x)
 
 @[simp] lemma mem_support [fintype α] {f : perm α} {x : α} : x ∈ f.support ↔ f x ≠ x :=
 by simp [support]
@@ -153,6 +155,9 @@ end
 
 lemma mul_swap_eq_swap_mul (f : perm α) (x y : α) : f * swap x y = swap (f x) (f y) * f :=
 by rw [swap_mul_eq_mul_swap, inv_apply_self, inv_apply_self]
+
+lemma conj_swap (a : perm α) (w x : α) : conj (perm α) a (swap w x) = swap (a w) (a x) :=
+by rw [_root_.conj_apply, mul_swap_eq_swap_mul, mul_inv_cancel_right]
 
 /-- Multiplying a permutation with `swap i j` twice gives the original permutation.
 
@@ -251,15 +256,16 @@ lemma swap_mul_swap_mul_swap {x y z : α} (hwz: x ≠ y) (hxz : x ≠ z) :
 equiv.ext _ _ $ λ n, by simp only [swap_apply_def, mul_apply]; split_ifs; cc
 
 lemma is_conj_swap {w x y z : α} (hwx : w ≠ x) (hyz : y ≠ z) : is_conj (swap w x) (swap y z) :=
-have h : ∀ {y z : α}, y ≠ z → w ≠ z →
-    (swap w y * swap x z) * swap w x * (swap w y * swap x z)⁻¹ = swap y z :=
-  λ y z hyz hwz, by rw [mul_inv_rev, swap_inv, swap_inv, mul_assoc (swap w y),
-    mul_assoc (swap w y),  ← mul_assoc _ (swap x z), swap_mul_swap_mul_swap hwx hwz,
-    ← mul_assoc, swap_mul_swap_mul_swap hwz.symm hyz.symm],
-if hwz : w = z
-then have hwy : w ≠ y, by cc,
-  ⟨swap w z * swap x y, by rw [swap_comm y z, h hyz.symm hwy]⟩
-else ⟨swap w y * swap x z, h hyz hwz⟩
+begin
+  by_cases hxy : x = y,
+  { subst y,
+    use swap w z,
+    rw [conj_swap, swap_apply_left, swap_apply_of_ne_of_ne hwx.symm hyz, swap_comm] },
+  use [swap x z * swap w y],
+  rw [conj_swap, mul_apply, mul_apply, swap_apply_left,
+    swap_apply_of_ne_of_ne (ne.symm hxy) hyz, swap_apply_of_ne_of_ne hwx.symm hxy,
+    swap_apply_left]
+end
 
 /-- set of all pairs (⟨a, b⟩ : Σ a : fin n, fin n) such that b < a -/
 def fin_pairs_lt (n : ℕ) : finset (Σ a : fin n, fin n) :=
