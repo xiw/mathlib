@@ -303,6 +303,10 @@ begin
   { simp only [add_apply, single_eq_of_ne h, zero_add] }
 end
 
+instance is_add_monoid_hom_single {i : ι} : is_add_monoid_hom (@single _ β _ _ i) :=
+{ map_zero := by simp,
+  map_add := by simp, }
+
 lemma single_add_erase {i : ι} {f : Π₀ i, β i} : single i (f i) + f.erase i = f :=
 ext $ λ i',
 if h : i = i' then by subst h; simp only [add_apply, single_apply, erase_apply, dif_pos rfl, if_pos, add_zero]
