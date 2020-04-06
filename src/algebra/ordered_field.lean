@@ -8,6 +8,7 @@ import algebra.ordered_ring algebra.field
 section linear_ordered_field
 variables {α : Type*} [linear_ordered_field α] {a b c d : α}
 
+@[priority 100]
 instance linear_ordered_field.linear_ordered_comm_ring : linear_ordered_comm_ring α :=
 { .. ‹linear_ordered_field α› }
 

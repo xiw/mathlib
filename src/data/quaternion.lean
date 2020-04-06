@@ -50,7 +50,7 @@ namespace quaternion
 
 variables {R : Type*} [comm_ring R] (r x y z : R) (a b c : ℍ[R])
 
-instance : has_coe R ℍ[R] := ⟨λ x, ⟨x, 0, 0, 0⟩⟩
+instance : has_coe_t R ℍ[R] := ⟨λ x, ⟨x, 0, 0, 0⟩⟩
 
 mk_simp_attribute quaternion_projs "Projections of operations on quaternions"
 
