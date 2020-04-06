@@ -8,6 +8,9 @@ import algebra.ordered_ring algebra.field
 section linear_ordered_field
 variables {α : Type*} [linear_ordered_field α] {a b c d : α}
 
+instance linear_ordered_field.linear_ordered_comm_ring : linear_ordered_comm_ring α :=
+{ .. ‹linear_ordered_field α› }
+
 lemma div_pos : 0 < a → 0 < b → 0 < a / b := div_pos_of_pos_of_pos
 
 @[simp] lemma inv_pos : ∀ {a : α}, 0 < a⁻¹ ↔ 0 < a :=
