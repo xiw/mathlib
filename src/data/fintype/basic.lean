@@ -5,8 +5,8 @@ Author: Mario Carneiro
 
 Finite types.
 -/
-import data.finset data.array.lemmas logic.unique
-import tactic.wlog
+import data.finset
+import data.array.lemmas
 universes u v
 
 variables {α : Type*} {β : Type*} {γ : Type*}
@@ -16,7 +16,7 @@ variables {α : Type*} {β : Type*} {γ : Type*}
   is a finset `elems` (a list up to permutation without duplicates),
   together with a proof that everything of type `α` is in the list. -/
 class fintype (α : Type*) :=
-(elems : finset α)
+(elems [] : finset α)
 (complete : ∀ x : α, x ∈ elems)
 
 namespace finset
@@ -133,7 +133,7 @@ noncomputable def mono_equiv_of_fin (α) [fintype α] [decidable_linear_order α
 have A : bijective (mono_of_fin univ h) := begin
   apply set.bijective_iff_bij_on_univ.2,
   rw ← @coe_univ α _,
-  exact bij_on_mono_of_fin (univ : finset α) h
+  exact mono_of_fin_bij_on (univ : finset α) h
 end,
 equiv.of_bijective A
 
@@ -348,6 +348,9 @@ instance {α : Type*} [fintype α] : fintype (option α) :=
 instance {α : Type*} (β : α → Type*)
   [fintype α] [∀ a, fintype (β a)] : fintype (sigma β) :=
 ⟨univ.sigma (λ _, univ), λ ⟨a, b⟩, by simp⟩
+
+@[simp] lemma finset.univ_sigma_univ {α : Type*} {β : α → Type*} [fintype α] [∀ a, fintype (β a)] :
+  (univ : finset α).sigma (λ a, (univ : finset (β a))) = univ := rfl
 
 instance (α β : Type*) [fintype α] [fintype β] : fintype (α × β) :=
 ⟨univ.product univ, λ ⟨a, b⟩, by simp⟩
@@ -756,7 +759,7 @@ def perms_of_finset (s : finset α) : finset (perm α) :=
 quotient.hrec_on s.1 (λ l hl, ⟨perms_of_list l, nodup_perms_of_list hl⟩)
   (λ a b hab, hfunext (congr_arg _ (quotient.sound hab))
     (λ ha hb _, heq_of_eq $ finset.ext.2 $
-      by simp [mem_perms_of_list_iff,mem_of_perm hab]))
+      by simp [mem_perms_of_list_iff, hab.mem_iff]))
   s.2
 
 lemma mem_perms_of_finset_iff : ∀ {s : finset α} {f : perm α},

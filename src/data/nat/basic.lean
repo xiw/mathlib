@@ -3,7 +3,8 @@ Copyright (c) 2014 Floris van Doorn. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Floris van Doorn, Leonardo de Moura, Jeremy Avigad, Mario Carneiro
 -/
-import logic.basic algebra.ordered_ring data.option.basic algebra.order_functions
+import algebra.ordered_ring
+import algebra.order_functions
 
 /-!
 # Basic operations on the natural numbers
@@ -12,7 +13,7 @@ This files has some basic lemmas about natural numbers, definition of the `choic
 and extra recursors:
 
 * `le_rec_on`, `le_induction`: recursion and induction principles starting at non-zero numbers.
-* `decreasing_induction` : recursion gowing downwards.
+* `decreasing_induction` : recursion growing downwards.
 * `strong_rec'` : recursion based on strong inequalities.
 -/
 
@@ -331,6 +332,9 @@ lemma pred_le_iff {n m : ℕ} : pred n ≤ m ↔ n ≤ succ m :=
 lemma lt_pred_iff {n m : ℕ} : n < pred m ↔ succ n < m :=
 @nat.lt_sub_right_iff_add_lt n 1 m
 
+lemma lt_of_lt_pred {a b : ℕ} (h : a < b - 1) : a < b :=
+lt_of_succ_lt (lt_pred_iff.1 h)
+
 protected theorem mul_ne_zero {n m : ℕ} (n0 : n ≠ 0) (m0 : m ≠ 0) : n * m ≠ 0
 | nm := (eq_zero_of_mul_eq_zero nm).elim n0 m0
 
@@ -567,7 +571,7 @@ lemma succ_div : ∀ (a b : ℕ), (a + 1) / b =
     rw [if_pos h₁, if_pos h₂, nat.add_sub_add_right, nat.sub_add_comm hb_le_a,
       by exact have _ := wf, succ_div (a - b),
       nat.add_sub_add_right],
-    simp [dvd_iff, succ_eq_add_one, add_comm 1], congr },
+    simp [dvd_iff, succ_eq_add_one, add_comm 1] },
   { have hba : ¬ b ≤ a,
       from not_le_of_gt (lt_trans (lt_succ_self a) (lt_of_not_ge hb_le_a1)),
     have hb_dvd_a : ¬ b + 1 ∣ a + 2,
@@ -593,6 +597,14 @@ end
 (eq_zero_or_pos n).elim
   (λ n0, by simp [n0])
   (λ npos, mod_eq_of_lt (mod_lt _ npos))
+
+/--  If `a` and `b` are equal mod `c`, `a - b` is zero mod `c`. -/
+lemma sub_mod_eq_zero_of_mod_eq {a b c : ℕ} (h : a % c = b % c) : (a - b) % c = 0 :=
+by rw [←nat.mod_add_div a c, ←nat.mod_add_div b c, ←h, ←nat.sub_sub, nat.add_sub_cancel_left,
+       ←nat.mul_sub_left_distrib, nat.mul_mod_right]
+
+lemma dvd_sub_mod (k : ℕ) : n ∣ (k - (k % n)) :=
+⟨k / n, nat.sub_eq_of_eq_add (nat.mod_add_div k n).symm⟩
 
 theorem add_pos_left {m : ℕ} (h : 0 < m) (n : ℕ) : 0 < m + n :=
 calc
@@ -659,6 +671,17 @@ theorem le_add_one_iff {i j : ℕ} : i ≤ j + 1 ↔ (i ≤ j ∨ i = j + 1) :=
 theorem mul_self_inj {n m : ℕ} : n * n = m * m ↔ n = m :=
 le_antisymm_iff.trans (le_antisymm_iff.trans
   (and_congr mul_self_le_mul_self_iff mul_self_le_mul_self_iff)).symm
+
+section facts
+-- Inject some simple facts into the typeclass system.
+-- This `fact` should not be confused with the factorial function `nat.fact`!
+
+instance succ_pos'' (n : ℕ) : _root_.fact (0 < n.succ) := n.succ_pos
+
+instance pos_of_one_lt (n : ℕ) [h : fact (1 < n)] : fact (0 < n) :=
+lt_trans zero_lt_one h
+
+end facts
 
 instance decidable_ball_lt (n : nat) (P : Π k < n, Prop) :
   ∀ [H : ∀ n h, decidable (P n h)], decidable (∀ n h, P n h) :=
@@ -919,8 +942,14 @@ theorem iterate_add : ∀ (m n : ℕ) (a : α), op^[m + n] a = (op^[m]) (op^[n] 
 | m 0 a := rfl
 | m (succ n) a := iterate_add m n _
 
+@[simp] theorem iterate_one : op^[1] = op := funext $ λ a, rfl
+
 theorem iterate_succ' (n : ℕ) (a : α) : op^[succ n] a = op (op^[n] a) :=
-by rw [← one_add, iterate_add]; refl
+by rw [← one_add, iterate_add, iterate_one]
+
+lemma iterate_mul (m : ℕ) : ∀ n, op^[m * n] = (op^[m]^[n])
+| 0 := by { ext a, simp only [mul_zero, iterate_zero] }
+| (n + 1) := by { ext x, simp only [mul_add, mul_one, iterate_one, iterate_add, iterate_mul n] }
 
 theorem iterate₀ {α : Type u} {op : α → α} {x : α} (H : op x = x) {n : ℕ} :
   op^[n] x = x :=
@@ -931,11 +960,13 @@ theorem iterate₁ {α : Type u} {β : Type v} {op : α → α} {op' : β → β
   op'^[n] (op'' x) = op'' (op^[n] x) :=
 by induction n; [simp only [iterate_zero], simp only [iterate_succ', H, *]]
 
-theorem iterate₂ {α : Type u} {op : α → α} {op' : α → α → α} (H : ∀ x y, op (op' x y) = op' (op x) (op y)) {n : ℕ} {x y : α} :
+theorem iterate₂ {α : Type u} {op : α → α} {op' : α → α → α}
+  (H : ∀ x y, op (op' x y) = op' (op x) (op y)) {n : ℕ} {x y : α} :
   op^[n] (op' x y) = op' (op^[n] x) (op^[n] y) :=
 by induction n; [simp only [iterate_zero], simp only [iterate_succ', H, *]]
 
-theorem iterate_cancel {α : Type u} {op op' : α → α} (H : ∀ x, op (op' x) = x) {n : ℕ} {x : α} : op^[n] (op'^[n] x) = x :=
+theorem iterate_cancel {α : Type u} {op op' : α → α} (H : ∀ x, op (op' x) = x) {n : ℕ} {x : α} :
+  op^[n] (op'^[n] x) = x :=
 by induction n; [refl, rwa [iterate_succ, iterate_succ', H]]
 
 theorem iterate_inj {α : Type u} {op : α → α} (Hinj : function.injective op) (n : ℕ) (x y : α)
@@ -1202,6 +1233,12 @@ by rw [←choose_mul_fact_mul_fact hk, mul_assoc]; exact dvd_mul_left _ _
 @[simp] lemma choose_symm {n k : ℕ} (hk : k ≤ n) : choose n (n-k) = choose n k :=
 by rw [choose_eq_fact_div_fact hk, choose_eq_fact_div_fact (sub_le _ _), nat.sub_sub_self hk, mul_comm]
 
+lemma choose_symm_of_eq_add {n a b : ℕ} (h : n = a + b) : nat.choose n a = nat.choose n b :=
+by { convert nat.choose_symm (nat.le_add_left _ _), rw nat.add_sub_cancel}
+
+lemma choose_symm_add {a b : ℕ} : choose (a+b) a = choose (a+b) b :=
+choose_symm_of_eq_add rfl
+
 lemma choose_succ_right_eq (n k : ℕ) : choose n (k + 1) * (k + 1) = choose n k * (n - k) :=
 begin
   have e : (n+1) * choose n k = choose n k * (k+1) + choose n (k+1) * (k+1),
@@ -1352,6 +1389,12 @@ by rw [←nat.div_mul_cancel w, h, one_mul]
 lemma eq_zero_of_dvd_of_div_eq_zero {a b : ℕ} (w : a ∣ b)  (h : b / a = 0) : b = 0 :=
 by rw [←nat.div_mul_cancel w, h, zero_mul]
 
+/-- If a small natural number is divisible by a larger natural number,
+the small number is zero. -/
+lemma eq_zero_of_dvd_of_lt {a b : ℕ} (w : a ∣ b) (h : b < a) : b = 0 :=
+nat.eq_zero_of_dvd_of_div_eq_zero w
+  ((nat.div_eq_zero_iff (lt_of_le_of_lt (zero_le b) h)).elim_right h)
+
 lemma div_le_div_left {a b c : ℕ} (h₁ : c ≤ b) (h₂ : 0 < c) : a / b ≤ a / c :=
 (nat.le_div_iff_mul_le _ _ h₂).2 $
   le_trans (mul_le_mul_left _ h₁) (div_mul_le_self _ _)
@@ -1445,3 +1488,56 @@ by { rw [subsingleton.elim mn (le_trans (le_succ m) smn), decreasing_induction_t
          decreasing_induction_succ'] }
 
 end nat
+
+namespace monoid_hom
+
+variables {M : Type*} {G : Type*} [monoid M] [group G]
+
+@[simp, to_additive]
+theorem iterate_map_one (f : M →* M) (n : ℕ) : f^[n] 1 = 1 :=
+nat.iterate₀ f.map_one
+
+@[simp, to_additive]
+theorem iterate_map_mul (f : M →* M) (n : ℕ) (x y) :
+  f^[n] (x * y) = (f^[n] x) * (f^[n] y) :=
+nat.iterate₂ f.map_mul
+
+@[simp, to_additive]
+theorem iterate_map_inv (f : G →* G) (n : ℕ) (x) :
+  f^[n] (x⁻¹) = (f^[n] x)⁻¹ :=
+nat.iterate₁ f.map_inv
+
+@[simp]
+theorem iterate_map_sub {A : Type*} [add_group A] (f : A →+ A) (n : ℕ) (x y) :
+  f^[n] (x - y) = (f^[n] x) - (f^[n] y) :=
+nat.iterate₂ f.map_sub
+
+end monoid_hom
+
+namespace ring_hom
+
+variables {R : Type*} [semiring R] {S : Type*} [ring S]
+
+@[simp] theorem iterate_map_one (f : R →+* R) (n : ℕ) : f^[n] 1 = 1 :=
+nat.iterate₀ f.map_one
+
+@[simp] theorem iterate_map_zero (f : R →+* R) (n : ℕ) : f^[n] 0 = 0 :=
+nat.iterate₀ f.map_zero
+
+@[simp] theorem iterate_map_mul (f : R →+* R) (n : ℕ) (x y) :
+  f^[n] (x * y) = (f^[n] x) * (f^[n] y) :=
+nat.iterate₂ f.map_mul
+
+@[simp] theorem iterate_map_add (f : R →+* R) (n : ℕ) (x y) :
+  f^[n] (x + y) = (f^[n] x) + (f^[n] y) :=
+nat.iterate₂ f.map_add
+
+@[simp] theorem iterate_map_neg (f : S →+* S) (n : ℕ) (x) :
+  f^[n] (-x) = -(f^[n] x) :=
+nat.iterate₁ f.map_neg
+
+@[simp] theorem iterate_map_sub (f : S →+* S) (n : ℕ) (x y) :
+  f^[n] (x - y) = (f^[n] x) - (f^[n] y) :=
+nat.iterate₂ f.map_sub
+
+end ring_hom

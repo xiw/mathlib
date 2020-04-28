@@ -3,10 +3,7 @@ Copyright (c) 2018 Scott Morrison. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Scott Morrison
 -/
-
 import category_theory.concrete_category
-import algebra.group.hom
-import data.equiv.mul_add
 import algebra.punit_instances
 
 /-!
@@ -21,8 +18,7 @@ along with the relevant forgetful functors between them.
 
 ## Implementation notes
 
-See the note [locally reducible category instances]
-and the note [reducible has_coe_to_sort instances for bundled categories].
+See the note [locally reducible category instances].
 -/
 
 /--
@@ -45,9 +41,6 @@ we always access `R.α` through the coercion rather than directly).
 TODO: Probably @[derive] should be able to create instances of the
 required form (without `id`), and then we could use that instead of
 this obscure `local attribute [reducible]` method.
-
-See also note [reducible has_coe_to_sort instances for bundled categories],
-explaining why the `has_coe_to_sort` instances themselves must be `[reducible]`.
 -/
 library_note "locally reducible category instances"
 
@@ -73,11 +66,7 @@ instance : inhabited Mon :=
 
 local attribute [reducible] Mon
 
-/--
-`has_coe_to_sort` instances for bundled categories must be `[reducible]`,
-see note [reducible has_coe_to_sort instances for bundled categories].
--/
-@[reducible, to_additive]
+@[to_additive]
 instance : has_coe_to_sort Mon := infer_instance -- short-circuit type class inference
 
 @[to_additive add_monoid]
@@ -113,11 +102,7 @@ instance : inhabited CommMon :=
 
 local attribute [reducible] CommMon
 
-/--
-`has_coe_to_sort` instances for bundled categories must be `[reducible]`,
-see note [reducible has_coe_to_sort instances for bundled categories].
--/
-@[reducible, to_additive]
+@[to_additive]
 instance : has_coe_to_sort CommMon := infer_instance -- short-circuit type class inference
 
 @[to_additive add_comm_monoid]

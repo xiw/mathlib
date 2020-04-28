@@ -3,8 +3,8 @@ Copyright (c) 2020 Scott Morrison. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Scott Morrison
 -/
-import category_theory.limits.shapes.zero
 import category_theory.shift
+import category_theory.concrete_category
 
 /-!
 # Differential objects in a category.
@@ -97,6 +97,11 @@ instance forget_faithful : faithful (forget C) :=
 instance has_zero_morphisms : has_zero_morphisms.{v} (differential_object.{v} C) :=
 { has_zero := λ X Y,
   ⟨{ f := 0, }⟩}
+
+variables {C}
+
+@[simp]
+lemma zero_f (P Q : differential_object.{v} C) : (0 : P ⟶ Q).f = 0 := rfl
 
 end differential_object
 

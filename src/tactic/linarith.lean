@@ -3,8 +3,8 @@ Copyright (c) 2018 Robert Y. Lewis. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Author: Robert Y. Lewis
 -/
-
-import tactic.ring data.nat.gcd data.list.defs meta.rb_map data.tree
+import tactic.ring
+import data.tree
 
 /-!
 # `linarith`
@@ -237,12 +237,8 @@ meta structure linarith_structure :=
 (vars : rb_set ℕ)
 (comps : rb_set pcomp)
 
-@[reducible] meta def linarith_monad :=
+@[reducible, derive [monad, monad_except pcomp]] meta def linarith_monad :=
 state_t linarith_structure (except_t pcomp id)
-
-meta instance : monad linarith_monad := state_t.monad
-meta instance : monad_except pcomp linarith_monad :=
-state_t.monad_except pcomp
 
 meta def get_vars : linarith_monad (rb_set ℕ) :=
 linarith_structure.vars <$> get
@@ -830,9 +826,25 @@ Config options:
 * `linarith {restrict_type := T}` will run only on hypotheses that are inequalities over `T`
 * `linarith {discharger := tac}` will use `tac` instead of `ring` for normalization.
   Options: `ring2`, `ring SOP`, `simp`
+-/
+meta def tactic.interactive.linarith (red : parse ((tk "!")?))
+  (restr : parse ((tk "only")?)) (hyps : parse pexpr_list?)
+  (cfg : linarith_config := {}) : tactic unit :=
+let cfg :=
+  if red.is_some then {cfg with transparency := semireducible, discharger := `[ring!]}
+  else cfg in
+do t ← target,
+   when cfg.split_hypotheses (try auto.split_hyps),
+   match get_contr_lemma_name t with
+   | some nm := seq (applyc nm) $
+     do t ← intro1, linarith.interactive_aux cfg (some t) restr.is_some hyps
+   | none := if cfg.exfalso then exfalso >> linarith.interactive_aux cfg none restr.is_some hyps
+             else fail "linarith failed: target type is not an inequality."
+   end
 
----
+add_hint_tactic "linarith"
 
+/--
 `linarith` attempts to find a contradiction between hypotheses that are linear (in)equalities.
 Equivalently, it can prove a linear inequality by assuming its negation and proving `false`.
 
@@ -876,25 +888,7 @@ optional arguments:
   hypotheses.
 * If `exfalso` is false, `linarith` will fail when the goal is neither an inequality nor `false`.
   (True by default.)
-
 -/
-meta def tactic.interactive.linarith (red : parse ((tk "!")?))
-  (restr : parse ((tk "only")?)) (hyps : parse pexpr_list?)
-  (cfg : linarith_config := {}) : tactic unit :=
-let cfg :=
-  if red.is_some then {cfg with transparency := semireducible, discharger := `[ring!]}
-  else cfg in
-do t ← target,
-   when cfg.split_hypotheses (try auto.split_hyps),
-   match get_contr_lemma_name t with
-   | some nm := seq (applyc nm) $
-     do t ← intro1, linarith.interactive_aux cfg (some t) restr.is_some hyps
-   | none := if cfg.exfalso then exfalso >> linarith.interactive_aux cfg none restr.is_some hyps
-             else fail "linarith failed: target type is not an inequality."
-   end
-
-add_hint_tactic "linarith"
-
 add_tactic_doc
 { name       := "linarith",
   category   := doc_category.tactic,
