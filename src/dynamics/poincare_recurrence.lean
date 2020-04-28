@@ -9,24 +9,6 @@ lemma nat.iterate_mul {α : Sort*} (f : α → α) (m : ℕ) :
 | 0 := by { ext x, simp }
 | (n + 1) := by { ext x, simp [mul_add, nat.iterate_add, nat.iterate_mul n] }
 
-namespace ennreal
-
-variables {a b c : ennreal}
-
-protected lemma div_lt_iff (h0 : b ≠ 0 ∨ c ≠ 0) (ht : b ≠ ⊤ ∨ c ≠ ⊤) :
-  c / b < a ↔ c < a * b :=
-lt_iff_lt_of_le_iff_le $ le_div_iff_mul_le h0 ht
-
-lemma exists_nat_mul_gt (ha : a ≠ 0) (hb : b ≠ ⊤) :
-  ∃ n : ℕ, b < n * a :=
-begin
-  have : b / a ≠ ⊤, from mul_ne_top hb (inv_ne_top.2 ha),
-  refine (ennreal.exists_nat_gt this).imp (λ n hn, _),
-  rwa [← ennreal.div_lt_iff (or.inl ha) (or.inr hb)]
-end
-
-end ennreal
-
 lemma exists_imp_distrib' {α : Sort*} {p q : α → Prop} :
   (∃ x, p x → q x) ↔ ((∀ x, p x) → ∃ x, q x) :=
 by classical; simp only [imp_iff_not_or, exists_or_distrib, not_forall]
