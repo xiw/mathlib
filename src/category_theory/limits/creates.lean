@@ -235,6 +235,7 @@ def creates_colimit_of_reflects_iso {K : J ⥤ C} {F : C ⥤ D} [reflects_isomor
     end } }
 
 /-- `F` preserves the colimit of `K` if it creates the colimit and `K ⋙ F` has the colimit. -/
+@[priority 50]
 instance preserves_colimit_of_creates_colimit_and_has_colimit (K : J ⥤ C) (F : C ⥤ D)
   [creates_colimit K F] [has_colimit (K ⋙ F)] :
 preserves_colimit K F :=
@@ -243,6 +244,7 @@ preserves_colimit K F :=
       ((cocones.functoriality K F).map_iso ((lifted_colimit_is_colimit (colimit.is_colimit _)).unique_up_to_iso t))) }
 
 /-- `F` preserves the colimit of shape `J` if it creates these colimits and `D` has them. -/
+@[priority 100]
 instance preserves_colimit_of_shape_of_creates_colimits_of_shape_and_has_colimits_of_shape (F : C ⥤ D)
   [creates_colimits_of_shape J F] [has_colimits_of_shape J D] :
 preserves_colimits_of_shape J F :=
