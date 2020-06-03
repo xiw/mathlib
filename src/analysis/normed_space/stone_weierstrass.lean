@@ -55,7 +55,6 @@ def ccc : filter X :=
 def C₀ (X Y : Type*) [topological_space X] [topological_space Y] [has_zero Y] : set (C X Y) :=
 { f : C X Y | tendsto f.1 (ccc X) (𝓝 0) }
 
-
 section
 variables [add_monoid Y] [topological_add_monoid Y]
 
