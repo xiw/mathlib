@@ -1141,6 +1141,19 @@ else
   have leading_coeff p * leading_coeff q ≠ 0, by simp [monic.def.1 hp, monic.def.1 hq, ne.symm h0],
   by rw [monic.def, leading_coeff_mul' this, monic.def.1 hp, monic.def.1 hq, one_mul]
 
+lemma monic_prod (s : finset A)(φ : A → polynomial R)  (hyp : ∀ a : A, monic (φ a)) :
+                monic (finset.prod s  (λ x : A, φ x))  :=
+ begin
+    apply (finset.induction_on s), {
+      erw prod_empty at  *,
+      exact leading_coeff_C _,
+    },
+    {
+        intros ℓ  s hyp' hyp_rec,
+        rw finset.prod_insert (by assumption),
+        apply monic_mul, exact hyp ℓ, exact hyp_rec,
+    },
+ end
 lemma monic_pow (hp : monic p) : ∀ (n : ℕ), monic (p ^ n)
 | 0     := monic_one
 | (n+1) := monic_mul hp (monic_pow n)
