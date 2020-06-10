@@ -1149,9 +1149,9 @@ lemma monic_prod (s : finset A)(φ : A → polynomial R)  (hyp : ∀ a : A, moni
       exact leading_coeff_C _,
     },
     {
-        intros ℓ  s hyp' hyp_rec,
+        intros ℓ  s hyp_ℓ_not_in_s hyp_ind,
         rw finset.prod_insert (by assumption),
-        apply monic_mul, exact hyp ℓ, exact hyp_rec,
+        exact monic_mul (hyp ℓ) hyp_ind,
     },
  end
 lemma monic_pow (hp : monic p) : ∀ (n : ℕ), monic (p ^ n)
