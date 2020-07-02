@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Johan Commelin
 -/
 import algebra.category.Mon.basic
-import category_theory.endomorphism
+import category.endomorphism
 
 /-!
 # Category instances for group, add_group, comm_group, and add_comm_group.

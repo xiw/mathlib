@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Rohan Mitta, Kevin Buzzard, Alistair Tucker, Johannes Hölzl, Yury Kudryashov
 -/
 import topology.metric_space.basic
-import category_theory.endomorphism
-import category_theory.types
+import category.endomorphism
+import category.types
 
 /-!
 # Lipschitz continuous functions

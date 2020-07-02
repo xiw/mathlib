@@ -3,8 +3,8 @@ Copyright (c) 2020 Scott Morrison. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Scott Morrison
 -/
-import category_theory.graded_object
-import category_theory.differential_object
+import category.graded_object
+import category.differential_object
 
 /-!
 # Chain complexes

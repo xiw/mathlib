@@ -1,5 +1,5 @@
 import topology.category.Top.limits
-import category_theory.limits.shapes
+import category.limits.shapes
 import topology.instances.real
 
 /- This file contains some demos of using the (co)limits API to do topology. -/

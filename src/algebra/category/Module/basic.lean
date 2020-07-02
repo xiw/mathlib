@@ -4,9 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Robert A. Spencer, Markus Himmel
 -/
 import algebra.category.Group.basic
-import category_theory.concrete_category
-import category_theory.limits.shapes.kernels
-import category_theory.preadditive
+import category.concrete_category
+import category.limits.shapes.kernels
+import category.preadditive
 import linear_algebra.basic
 
 open category_theory

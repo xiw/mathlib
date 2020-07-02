@@ -5,7 +5,7 @@ Authors: Scott Morrison
 -/
 import topology.category.Top.open_nhds
 import topology.sheaves.presheaf
-import category_theory.limits.limits
+import category.limits.limits
 
 universes v u v' u'
 

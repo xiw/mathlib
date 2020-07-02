@@ -3,7 +3,7 @@ Copyright (c) 2019 Scott Morrison. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Reid Barton, Patrick Massot, Scott Morrison
 -/
-import category_theory.monad.limits
+import category.monad.limits
 import topology.uniform_space.completion
 import topology.category.Top.basic
 

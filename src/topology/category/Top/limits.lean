@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Patrick Massot, Scott Morrison, Mario Carneiro
 -/
 import topology.category.Top.basic
-import category_theory.limits.types
-import category_theory.limits.preserves
+import category.limits.types
+import category.limits.preserves
 
 open topological_space
 open category_theory

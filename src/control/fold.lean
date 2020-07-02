@@ -7,10 +7,10 @@ import algebra.free_monoid
 import algebra.opposites
 import control.traversable.instances
 import control.traversable.lemmas
-import category_theory.category
-import category_theory.endomorphism
-import category_theory.types
-import category_theory.category.Kleisli
+import category.category
+import category.endomorphism
+import category.types
+import category.category.Kleisli
 
 /-!
 

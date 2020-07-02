@@ -4,7 +4,7 @@ Authors: Johannes Hölzl
 -/
 import topology.category.Top.basic
 import measure_theory.giry_monad
-import category_theory.monad.algebra
+import category.monad.algebra
 
 /-
 * Meas, the category of measurable spaces
