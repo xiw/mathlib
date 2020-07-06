@@ -1,0 +1,12 @@
+#!/bin/bash
+
+while read local_ref local_sha remote_ref remote_sha
+do
+  if [[ $remote_ref == *"push-hook"* ]]; then
+    echo "You should not push to master. Please create a branch."
+    exit 1
+  fi
+done
+
+exit 0
+
