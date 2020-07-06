@@ -2,13 +2,11 @@
 
 while read local_ref local_sha remote_ref remote_sha
 do
-  echo $local_ref
-  echo $local_sha
-  echo $remote_ref
-  echo $remote_sha
-  echo "================================="
-  echo "================================="
-  echo "================================="
+  echo $local_ref >> /home/jmc/tmptest
+  echo $local_sha >> /home/jmc/tmptest
+  echo $remote_ref >> /home/jmc/tmptest
+  echo $remote_sha >> /home/jmc/tmptest
+  echo "=================================" >> /home/jmc/tmptest
   # Why is this not working?
   if [[ $remote_ref == *"push-hook"* ]]; then
     echo "You should not push to master. Please create a branch."
