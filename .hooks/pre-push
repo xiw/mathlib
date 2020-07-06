@@ -2,6 +2,7 @@
 
 while read local_ref local_sha remote_ref remote_sha
 do
+  # Why is this not working?
   if [[ $remote_ref == *"push-hook"* ]]; then
     echo "You should not push to master. Please create a branch."
     exit 1
