@@ -7,6 +7,8 @@ Author: Aaron Anderson.
 import linear_algebra.cayley_hamilton
 import linear_algebra.matrix
 import ring_theory.polynomial.basic
+import data.zmod.basic
+import number_theory.quadratic_reciprocity
 
 noncomputable theory
 
@@ -116,7 +118,7 @@ by { apply prod_induction, apply monic_mul, apply monic_one }
 theorem deg_char_poly_eq_dim [nonzero R] (M: matrix n n R) :
 (char_poly M).degree = fintype.card n :=
 begin
-  sorry
+
 end
 
 def next_coeff (p : polynomial R) : R := ite (p.nat_degree = 0) 0 p.coeff (p.nat_degree - 1)
@@ -208,12 +210,13 @@ end
 lemma next_coeff_C_eq_zero (c : R) :
 next_coeff (C c) = 0 := by {rw next_coeff, simp}
 
-lemma next_coeff_prod_monic {α : Type u} (s : finset α) (f : α → polynomial R) (h : ∀ a : α, a ∈ s → monic (f a)) :
+lemma next_coeff_prod_monic {α : Type u} [decidable_eq α]
+  (s : finset α) (f : α → polynomial R) (h : ∀ a : α, a ∈ s → monic (f a)) :
 next_coeff (s.prod f) = s.sum (λ (a : α), next_coeff (f a)) :=
 begin
   revert h, apply finset.induction_on s,
-  { simp only [finset.not_mem_empty, forall_prop_of_true, forall_prop_of_false, finset.sum_empty, finset.prod_empty, not_false_iff,
- forall_true_iff],
+  { simp only [finset.not_mem_empty, forall_prop_of_true, forall_prop_of_false, finset.sum_empty,
+  finset.prod_empty, not_false_iff, forall_true_iff],
   rw ← C_1, rw next_coeff_C_eq_zero },
   { intros a s ha hs monic,
     rw finset.prod_insert ha,
@@ -226,85 +229,79 @@ begin
       intros b bs, apply monic, apply finset.mem_insert_of_mem bs }}
 end
 
-theorem trace_from_char_poly (M: matrix n n R) :
-(matrix.trace n R R) M = -(char_poly M).coeff (fintype.card n - 1) :=
+--sort of a special case of Vieta?
+lemma card_pred_coeff_prod_X_sub_C {α : Type*} [decidable_eq α] (s : finset α) (f : α → R) :
+  0 < s.card → (∏ i in s, (X - C (f i))).coeff (s.card - 1) = s.sum f :=
 begin
-  rw char_poly_eq_poly_of_refl_plus_others,
-  rw polynomial.coeff_add,
-  have h1 := sum_poly_of_non_refl_low_degree M,
-  rw polynomial.coeff_eq_zero_of_degree_lt h1,
-  rw poly_of_perm, rw equiv.perm.sign_refl, simp only [one_mul, if_true, id.def, eq_self_iff_true, int.cast_one, units.coe_one, zero_add, equiv.coe_refl, matrix.trace_diag,
- matrix.diag_apply, coe_coe],
-  have h2 : (∏ (i : n), (X - C (M i i))).coeff (fintype.card n - 1) = next_coeff (∏ (i : n), (X - C (M i i))),
-  {
-    have mon : monic ∏ (i : n), (X - C (M i i)),
-    { apply monic_prod_monic, intros a ha, apply monic_X_sub_C },
-    unfold next_coeff,
-    have h3 := degree_prod_eq_sum_degree_of_prod_nonzero finset.univ (λ i : n, X - C (M i i)) (ne_zero_of_monic mon),
-    rw h3,
-    have h4 : (λ (i : n), (X - C (M i i)).nat_degree) = λ i : n, 1,
-    { ext,
-      have pos : 1 > 0 := by omega,
-      rw ← polynomial.degree_eq_iff_nat_degree_eq_of_pos pos,
-      simp,
-    },
-    simp only [h4, mul_one, nat.nsmul_eq_mul, finset.sum_const],
-    have cardne0 : ¬ finset.univ.card = 0 :=  finset.card_ne_zero_of_mem (finset.mem_univ (arbitrary n)),
-    rw if_neg cardne0,
-  }
+  apply s.induction_on, simp,
+  sorry,
+end
+
+--shouldn't need these instances, but might need casework
+theorem trace_from_char_poly [nonzero R] [inhabited n] (M: matrix n n R) :
+(matrix.trace n R R) M = (char_poly M).coeff (fintype.card n - 1) :=
+begin
+  rw high_coeff_char_poly_eq_coeff_prod_diag, swap, refl,
+  rw [fintype.card, card_pred_coeff_prod_X_sub_C univ (λ i : n, M i i)], simp,
+  rw [← fintype.card, fintype.card_pos_iff], apply_instance,
+end
+
+lemma hom_det {S : Type*} [comm_ring S] {M : matrix n n R} {f : R →+* S} :
+  f M.det = matrix.det (λ i j : n, f (M i j)) :=
+begin
+  unfold matrix.det, simp [f.map_sum, f.map_prod],
+end
+
+lemma eval_mat_poly_equiv (M : matrix n n (polynomial R)) (r : R) (i j : n) :
+  polynomial.eval r (M i j) = polynomial.eval ((scalar n) r) (mat_poly_equiv M) i j :=
+begin
+  unfold polynomial.eval, unfold eval₂, unfold finsupp.sum, rw sum_apply, rw sum_apply,
+  sorry,
+end
+
+lemma eval_det (M : matrix n n (polynomial R)) (r : R) :
+  polynomial.eval r M.det = (polynomial.eval (matrix.scalar n r) (mat_poly_equiv M)).det :=
+begin
+  rw [polynomial.eval, ← coe_eval₂_ring_hom, hom_det], refine congr rfl _,
+  rw [coe_eval₂_ring_hom, ← polynomial.eval],
+  ext, apply eval_mat_poly_equiv,
 end
 
 theorem det_from_char_poly (M: matrix n n R) :
 M.det = (-1)^(fintype.card n) * (char_poly M).coeff 0:=
 begin
-  rw polynomial.coeff_zero_eq_eval_zero,
-  sorry,
+  rw [coeff_zero_eq_eval_zero, char_poly, eval_det, mat_poly_equiv_char_matrix, ← det_smul],
+  simp
 end
 
 section char_p
 
-instance polynomial_char_p (p : ℕ) [char_p R p] : char_p (polynomial R) p :=
-{ cast_eq_zero_iff :=
-  begin
-    intro k,
-    have := _inst_6.cast_eq_zero_iff, have hk := this k, clear this,
-    rw ← hk,
-    rw polynomial.nat_cast_eq_C k,
-    rw ← polynomial.C_0,
-    rw polynomial.C_inj,
-  end }
-
-instance matrix_char_p (p : ℕ) [char_p R p] : char_p (matrix n n R) p :=
-{ cast_eq_zero_iff :=
-  begin
-    intro k,
-    have := _inst_6.cast_eq_zero_iff, have hk := this k, clear this,
-    rw ← hk,
-    sorry,
-  end }
-
-lemma poly_pow_p_char_p  (p : ℕ) [fact p.prime] [char_p R p] (f : polynomial R) :
-f ^ p = f.comp (polynomial.X ^ p) :=
+lemma matrix.scalar_inj [inhabited n] {r s : R} : scalar n r = scalar n s ↔ r = s :=
 begin
-  sorry
+  split; intro h, rw [← scalar_apply_eq r (arbitrary n), ← scalar_apply_eq s (arbitrary n), h],
+  rw h,
 end
 
-lemma pow_commutes_with_det (k : ℕ) (M : matrix n n R) :
+@[instance] instance matrix.char_p [inhabited n] (p : ℕ) [char_p R p] : char_p (matrix n n R) p :=
+{ cast_eq_zero_iff :=
+  begin
+    intro k,
+    have := _inst_5.cast_eq_zero_iff, have hk := this k, clear this,
+    rw ← hk, repeat {rw ← nat.cast_zero}, repeat {rw ← (scalar n).map_nat_cast},
+    rw matrix.scalar_inj, refl,
+  end }
+
+
+
+lemma det_pow (k : ℕ) (M : matrix n n R) :
 (M ^ k).det = (M.det) ^ k :=
 begin
   induction k with k hk, simp,
   repeat {rw pow_succ}, rw ← hk, simp,
 end
 
-lemma pow_commutes_with_m_C (k : ℕ) (M : matrix n n R) :
-m_C (M ^ k) = (m_C M) ^ k :=
-begin
-  unfold m_C,
-  change matrix.ring_hom_apply (ring_hom.of C) (M ^ k) = matrix.ring_hom_apply (ring_hom.of C) M ^ k,
-  induction k with k hk, simp, simp
-end
 
-theorem add_pow_char_comm_elts (α : Type u) [ring α] {p : ℕ} [fact p.prime]
+theorem add_pow_char_of_commute (α : Type u) [ring α] {p : ℕ} [fact p.prime]
   [char_p α p] (x y : α) :
   commute x y → (x + y)^p = x^p + y^p :=
 begin
@@ -321,35 +318,66 @@ begin
   rw [pow_zero, nat.sub_zero, one_mul, nat.choose_zero_right, nat.cast_one, mul_one]
 end
 
-lemma comp_commutes_with_det (p : polynomial R) (M : matrix n n (polynomial R)) :
-(matrix.fun_apply (λ q : polynomial R, q.comp p) M).det = (M.det).comp p :=
+lemma comp_det (p : polynomial R) (M : matrix n n (polynomial R)) :
+  (M.det).comp p = matrix.det (λ i j : n, (M i j).comp p) :=
+by { unfold comp, rw ← coe_eval₂_ring_hom, rw hom_det }
+
+lemma pow_comp (p q : polynomial R) (k : ℕ) : (p ^ k).comp q = (p.comp q) ^ k :=
 begin
-  sorry
+  unfold comp, rw ← coe_eval₂_ring_hom, apply ring_hom.map_pow,
 end
 
-lemma char_poly_pow_p_char_p (p : ℕ) [fact p.prime] [char_p R p] (M : matrix n n R) :
+variables (p : ℕ) [fact p.prime]
+
+lemma frobenius_fixed (a : zmod p): a ^ p = a :=
+begin
+  have posp : 0 < p, { apply nat.prime.pos, apply _inst_4, },
+  by_cases a = 0, rw h, rw zero_pow posp,
+  conv_rhs {rw ← one_mul a, rw ← pow_one a}, rw ← zmod.fermat_little p h,
+  rw ← pow_add, refine congr rfl _, symmetry, apply nat.succ_pred_eq_of_pos posp,
+end
+
+lemma poly_pow_p_char_p (f : polynomial (zmod p)) :
+f ^ p = f.comp (X ^ p) :=
+begin
+  apply f.induction_on', intros, rw add_pow_char, rw [a, a_1], simp, apply _inst_4,
+  intros, repeat {rw single_eq_C_mul_X}, rw mul_comp, rw mul_pow,  simp [pow_comp],
+  repeat {rw ← pow_mul}, rw mul_comm p n, rw ← C.map_pow, rw frobenius_fixed p a,
+end
+
+lemma matrix.scalar.commute (r : R) (M : matrix n n R) : commute (scalar n r) M :=
+by { unfold commute, unfold semiconj_by, simp }
+
+def foo (M : matrix n n R) (k : ℕ):
+  (λ (i j : n), C (M i j)) ^ k = λ (i j : n), C ((M ^ k) i j) :=
+begin
+  induction k, simp, sorry,
+  repeat {rw pow_succ}, rw k_ih, simp,
+  sorry,
+end
+
+lemma char_poly_pow_p_char_p [inhabited n] (M : matrix n n (zmod p)) :
 char_poly (M ^ p) = char_poly M :=
 begin
-  have := poly_pow_p_char_p p (char_poly M),
-  unfold char_poly at *,
-  apply frobenius_inj (polynomial R) p,
-  repeat {rw frobenius_def},
-  rw poly_pow_p_char_p,
-  rw ← pow_commutes_with_det,
+  apply frobenius_inj (polynomial (zmod p)) p, repeat {rw frobenius_def},
+  rw poly_pow_p_char_p p (char_poly (M ^ p)),
+  unfold char_poly, unfold char_matrix, rw ← det_pow,
   repeat {rw sub_eq_add_neg},
-  rw add_pow_char_comm_elts, swap,
-  { rw commute, rw semiconj_by, simp, },
-  rw pow_commutes_with_m_C,
-  rw ← comp_commutes_with_det,
-  refine congr rfl _,
-  ext,
-  refine congr (congr rfl _) rfl,
-  rw matrix.fun_apply,
-  simp only [add_comp, X_comp, matrix.neg_val, mul_comp, matrix.add_val, matrix.smul_val, m_C, matrix.one_val],
-
-  -- rw polynomial.eval_comp at this
-  -- apply poly_pow_p_char_p,
-  sorry,
+  rw add_pow_char_of_commute (matrix n n (polynomial (zmod p))), swap, apply matrix.scalar.commute,
+  swap, apply_instance,
+  { rw ← (scalar n).map_pow, rw comp_det,
+  refine congr rfl _, ext, refine congr (congr rfl _) rfl,
+  simp only [add_comp, neg_val, X_comp, coeff_add, mul_comp, add_val],
+  refine congr (congr rfl _) _,
+    { by_cases i = j; simp [h], },
+    { rw ← ring_hom.map_neg, rw C_comp,
+      transitivity (-λ (i j : n), C ((M ^ p) i j) : matrix n n (polynomial (zmod p))) i j,
+      { simp, },
+      { rw ← foo M p, refine congr (congr _ rfl) rfl, refine congr (congr _ rfl) rfl,
+        unfold pow, library_search,
+         ext, refine congr _ rfl, refine congr rfl _, rw monoid.pow_eq_pow,  sorry,  },
+    } },
+  { exact matrix.char_p p }
 end
 
 end char_p
