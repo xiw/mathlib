@@ -437,12 +437,19 @@ by { unfold commute, unfold semiconj_by, simp }
 def foo (M : matrix n n R) (k : ℕ):
   (λ (i j : n), C (M i j)) ^ k = λ (i j : n), C ((M ^ k) i j) :=
 begin
-  induction k, simp, sorry,
+  induction k, simp, ext, rw matrix.one_val,
+
+   sorry,
   repeat {rw pow_succ}, rw k_ih, simp,
   sorry,
 end
 
-lemma char_poly_pow_p_char_p [inhabited n] (M : matrix n n (zmod p)) :
+lemma foobar (M : matrix n n (zmod p)) : ∀ i j, (M ^ p) i j = (M i j)^ p :=
+begin
+
+end
+
+lemma char_poly_pow_p_char_p [inhabited n] (M : matrix n n (zmod p)) (hp : p % 2 = 1) :
 char_poly (M ^ p) = char_poly M :=
 begin
   apply frobenius_inj (polynomial (zmod p)) p, repeat {rw frobenius_def},
@@ -451,20 +458,32 @@ begin
   repeat {rw sub_eq_add_neg},
   rw add_pow_char_of_commute (matrix n n (polynomial (zmod p))), swap, apply matrix.scalar.commute,
   swap, apply_instance,
-  { rw ← (scalar n).map_pow, rw comp_det,
+  swap, exact matrix.char_p p,
+  rw ← (scalar n).map_pow, rw comp_det,
+  rw neg_pow, rw neg_one_pow_eq_pow_mod_two, rw hp,
+  simp only [neg_val, neg_mul, matrix.one_mul, pow_one, neg_inj, mul_eq_mul],
+  -- congr,
   refine congr rfl _, ext, refine congr (congr rfl _) rfl,
   simp only [add_comp, neg_val, X_comp, coeff_add, mul_comp, add_val],
   refine congr (congr rfl _) _,
-    { by_cases i = j; simp [h], },
-    { rw ← ring_hom.map_neg, rw C_comp,
-      transitivity (-λ (i j : n), C ((M ^ p) i j) : matrix n n (polynomial (zmod p))) i j,
-      { simp, },
-      { dsimp, tidy,
-        refine congr (congr _ rfl) rfl, refine congr (congr _ rfl) rfl,
-        unfold pow, library_search,
-         ext, refine congr _ rfl, refine congr rfl _, rw monoid.pow_eq_pow,  sorry,  },
-    } },
-  { exact matrix.char_p p }
+  { by_cases i = j; simp [h], },
+  rw [← ring_hom.map_neg, C_comp, ring_hom.map_neg, neg_inj],
+  have := C M = λ i j, C (M i j),
+  -- rw foobar, simp, dsimp,
+  -- ⇑C ((M ^ p) i j) = ((λ (i j : n), ⇑C (M i j)) ^ p) i j
+  sorry,
+  -- rw neg_apply,
+  -- conv_rhs { funext, rw ← add_monoid_hom.neg_apply,},
+  -- transitivity (λ (i j : n), C ((M ^ p) i j) ) i j, { simp },
+  -- refine congr (congr _ rfl) rfl,
+  -- conv_lhs { congr, funext, dsimp, },
+
+  -- unfold pow,
+    --   { dsimp, tidy,
+    --     refine congr (congr _ rfl) rfl, refine congr (congr _ rfl) rfl,
+    --     unfold pow, sorry,
+    --      ext, refine congr _ rfl, refine congr rfl _, rw monoid.pow_eq_pow,  sorry,  },
+    -- },
 end
 
 end char_p
