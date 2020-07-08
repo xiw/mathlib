@@ -434,12 +434,31 @@ end
 lemma matrix.scalar.commute (r : R) (M : matrix n n R) : commute (scalar n r) M :=
 by { unfold commute, unfold semiconj_by, simp }
 
-def foo (M : matrix n n R) (k : ℕ):
-  (λ (i j : n), C (M i j)) ^ k = λ (i j : n), C ((M ^ k) i j) :=
+variables {S : Type u} [ring S] [algebra R S]
+--def alg_hom_on_matrix_vals (f : R →ₐ[R] S) : (matrix n n R) →ₐ[R] (matrix n n S) :=
+--(matrix_equiv_tensor R S n).comp (algebra.tensor_product.map f id).comp
+--  (matrix_equiv_tensor R R n).symm
+
+--def mat_C : (matrix n n R) →ₐ[R] (matrix n n (polynomial R)) :=
+--  alg_hom_on_matrix_vals (algebra_map R (polynomial R))
+
+--lemma alg_hom_on_matrix_vals_apply (f : R →ₐ[R] S) (M : matrix n n R) (i j : n):
+--  (alg_hom_on_matrix_vals n f M) i j = f (M i j) :=
+--begin
+--  simp,
+
+--end
+
+def mat_C : (matrix n n R) →+* (matrix n n (polynomial R)) :=
+  mat_poly_equiv.symm.to_ring_equiv.to_ring_hom.comp C
+
+@[simp]
+lemma mat_C_apply (M : matrix n n R) (i j : n):
+  (mat_C M) i j = C (M i j) :=
 begin
-  induction k, simp, sorry,
-  repeat {rw pow_succ}, rw k_ih, simp,
-  sorry,
+  unfold mat_C,
+  transitivity mat_poly_equiv.symm (C M) i j, simp, refl,
+  ext, by_cases n_1 = 0; simp [h, coeff_C],
 end
 
 lemma char_poly_pow_p_char_p [inhabited n] (M : matrix n n (zmod p)) :
@@ -456,13 +475,13 @@ begin
   simp only [add_comp, neg_val, X_comp, coeff_add, mul_comp, add_val],
   refine congr (congr rfl _) _,
     { by_cases i = j; simp [h], },
-    { rw ← ring_hom.map_neg, rw C_comp,
-      transitivity (-λ (i j : n), C ((M ^ p) i j) : matrix n n (polynomial (zmod p))) i j,
-      { simp, },
-      { dsimp, tidy,
-        refine congr (congr _ rfl) rfl, refine congr (congr _ rfl) rfl,
-        unfold pow, library_search,
-         ext, refine congr _ rfl, refine congr rfl _, rw monoid.pow_eq_pow,  sorry,  },
+    { rw ← ring_hom.map_neg, rw C_comp, rw ring_hom.map_neg,
+      simp_rw ← mat_C_apply,
+      have h : (-mat_C M) ^ p = - mat_C (M ^ p),
+      { repeat {rw neg_eq_neg_one_mul}, rw commute.mul_pow,
+        sorry, sorry,
+      },
+      simp_rw h, refl,
     } },
   { exact matrix.char_p p }
 end
