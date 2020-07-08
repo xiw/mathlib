@@ -19,24 +19,57 @@ open_locale big_operators
 
 variables {R : Type u} [comm_ring R]
 variables {n : Type w} [fintype n] [decidable_eq n]
+variables {α : Type w} [decidable_eq α]
 
 open finset
 
-lemma polynomial.degree_prod_le {α : Type w} [decidable_eq α] (s : finset α) (f : α → polynomial R) :
-  (s.prod f).nat_degree ≤ ∑ i in s, (f i).nat_degree :=
+section poly_big_ops
+
+namespace polynomial
+
+variables (s : finset α) (f : α → polynomial R)
+
+lemma nat_degree_prod_le : (s.prod f).nat_degree ≤ ∑ i in s, (f i).nat_degree :=
 begin
-  apply s.induction_on, { simp },--apply nat_degree_le_of_degree_le, simp [degree_one_le],
-  intros a s anins ih, rw [prod_insert anins, sum_insert anins],
+  apply s.induction_on, simp,intros a s anins ih,
+  rw [prod_insert anins, sum_insert anins],
   transitivity (f a).nat_degree + (∏ (x : α) in s, (f x)).nat_degree,
   apply polynomial.nat_degree_mul_le, apply add_le_add_left ih,
 end
 
+lemma leading_coeff_prod' (h : ∏ i in s, (f i).leading_coeff ≠ 0) :
+  (∏ i in s, f i).leading_coeff = ∏ i in s, (f i).leading_coeff :=
+begin
+  revert h, apply s.induction_on, simp, intros a s anins ih,
+  repeat {rw prod_insert anins},
+  intro nz, rw polynomial.leading_coeff_mul'; rwa ih, repeat {apply right_ne_zero_of_mul nz},
+end
+
+lemma nat_degree_prod_eq' (h : ∏ i in s, (f i).leading_coeff ≠ 0) :
+  (s.prod f).nat_degree = ∑ i in s, (f i).nat_degree :=
+begin
+  revert h, apply s.induction_on, simp, intros a s anins ih,
+  rw [prod_insert anins, prod_insert anins, sum_insert anins],
+  intro nz, rw polynomial.nat_degree_mul_eq', rw ih, apply right_ne_zero_of_mul nz,
+  rwa polynomial.leading_coeff_prod', apply right_ne_zero_of_mul nz,
+end
+
+lemma monic_prod_monic :
+  (∀ a : α, a ∈ s → monic (f a)) → monic (s.prod f) :=
+by { apply prod_induction, apply monic_mul, apply monic_one }
+
+end polynomial
+
+end poly_big_ops
+
+open polynomial
+
 section fixed_points
 
 lemma gt_one_nonfixed_point_of_nonrefl {σ : equiv.perm n} (h : σ ≠ equiv.refl n) :
-1 < (finset.filter (λ (x : n), ¬ σ x = x) finset.univ).card :=
+1 < (filter (λ (x : n), ¬ σ x = x) univ).card :=
 begin
-  rw finset.one_lt_card_iff,
+  rw one_lt_card_iff,
   contrapose! h,
   ext, dsimp,
   have := h (σ x) x,
@@ -45,15 +78,14 @@ begin
 end
 
 lemma lt_card_sub_one_fixed_point_of_nonrefl {σ : equiv.perm n} (h : σ ≠ equiv.refl n) :
-(finset.filter (λ (x : n), σ x = x) finset.univ).card < fintype.card n - 1:=
+(filter (λ (x : n), σ x = x) univ).card < fintype.card n - 1:=
 begin
-  have hun := @finset.filter_union_filter_neg_eq _ (λ (x : n), σ x = x) _ _ _ finset.univ,
-  have hin : (finset.filter (λ (x : n), σ x = x) finset.univ) ∩
-    (finset.filter (λ (x : n), ¬ σ x = x) finset.univ) = ∅
-      :=  finset.filter_inter_filter_neg_eq finset.univ,
-  rw ← finset.disjoint_iff_inter_eq_empty at hin,
+  have hun := @filter_union_filter_neg_eq _ (λ (x : n), σ x = x) _ _ _ univ,
+  have hin : (filter (λ (x : n), σ x = x) univ) ∩ (filter (λ (x : n), ¬ σ x = x) univ) = ∅
+    := filter_inter_filter_neg_eq univ,
+  rw ← disjoint_iff_inter_eq_empty at hin,
   rw fintype.card, conv_rhs { rw ← hun },
-  rw finset.card_disjoint_union hin,
+  rw card_disjoint_union hin,
   have := gt_one_nonfixed_point_of_nonrefl h, omega,
 end
 
@@ -63,9 +95,7 @@ variable {M : matrix n n R}
 
 lemma nat_degree_char_matrix_val [nonzero R] (i j : n) :
   (char_matrix M i j).nat_degree = ite (i = j) 1 0 :=
-begin
-  by_cases i = j, simp [h, ← degree_eq_iff_nat_degree_eq_of_pos (nat.succ_pos 0)], simp [h],
-end
+by { by_cases i = j, simp [h, ← degree_eq_iff_nat_degree_eq_of_pos (nat.succ_pos 0)], simp [h], }
 
 lemma nat_degree_char_matrix_val_le (i j : n) :
   (char_matrix M i j).nat_degree ≤ ite (i = j) 1 0 :=
@@ -87,7 +117,7 @@ begin
   apply submodule.smul_mem (degree_lt R (fintype.card n - 1)) ↑↑(equiv.perm.sign c),
   rw mem_degree_lt, apply lt_of_le_of_lt degree_le_nat_degree _, rw with_bot.coe_lt_coe,
   apply lt_of_le_of_lt _ (lt_card_sub_one_fixed_point_of_nonrefl (ne_of_mem_erase hc)),
-  apply le_trans (polynomial.degree_prod_le univ (λ i : n, (char_matrix M (c i) i))) _,
+  apply le_trans (polynomial.nat_degree_prod_le univ (λ i : n, (char_matrix M (c i) i))) _,
   rw card_eq_sum_ones, rw sum_filter, apply sum_le_sum,
   intros, apply nat_degree_char_matrix_val_le,
 end
@@ -99,26 +129,53 @@ begin
   apply lt_of_lt_of_le (low_degree_char_poly_sub_diagonal M) _, rw with_bot.coe_le_coe, apply h,
 end
 
+lemma det_of_dim_zero (h : fintype.card n = 0) (M : matrix n n R) : M.det = 1 :=
+begin
+  rw fintype.card_eq_zero_iff at h,
+  have hone : M = 1, ext, exfalso, apply h i, rw hone, simp,
+end
+
+theorem degree_char_poly_eq_dim [nonzero R] (M: matrix n n R) :
+(char_poly M).degree = fintype.card n :=
+begin
+  by_cases fintype.card n = 0, rw h, unfold char_poly, rw det_of_dim_zero, simpa,
+  rw ← sub_add_cancel (char_poly M) (∏ (i : n), (X - C (M i i))),
+  have h1 : (∏ (i : n), (X - C (M i i))).degree = fintype.card n,
+  { rw degree_eq_iff_nat_degree_eq_of_pos, swap, apply nat.pos_of_ne_zero h,
+    rw nat_degree_prod_eq', simp_rw nat_degree_X_sub_C, unfold fintype.card, simp,
+    simp_rw (monic_X_sub_C _).leading_coeff, simp, },
+  rw degree_add_eq_of_degree_lt, exact h1, rw h1,
+  apply lt_trans (low_degree_char_poly_sub_diagonal M), rw with_bot.coe_lt_coe,
+  rw ← nat.pred_eq_sub_one, apply nat.pred_lt, apply h,
+end
+
+theorem nat_degree_char_poly_eq_dim [nonzero R] (M: matrix n n R) :
+  (char_poly M).nat_degree = fintype.card n :=
+nat_degree_eq_of_degree_eq_some (degree_char_poly_eq_dim M)
+
+lemma char_poly_monic_of_nonzero [nonzero R] (M : matrix n n R):
+  monic (char_poly M):=
+begin
+  by_cases fintype.card n = 0, rw [char_poly, det_of_dim_zero h], apply monic_one,
+  have mon : (∏ (i : n), (X - C (M i i))).monic,
+  { apply monic_prod_monic univ (λ i : n, (X - C (M i i))), simp [monic_X_sub_C], },
+  rw ← sub_add_cancel (∏ (i : n), (X - C (M i i))) (char_poly M) at mon,
+  rw monic at *, rw leading_coeff_add_of_degree_lt at mon, rw ← mon,
+  rw degree_char_poly_eq_dim, rw ← neg_sub, rw degree_neg,
+  apply lt_trans (low_degree_char_poly_sub_diagonal M), rw with_bot.coe_lt_coe,
+  rw ← nat.pred_eq_sub_one, apply nat.pred_lt, apply h,
+end
+
 lemma char_poly_monic (M : matrix n n R):
   monic (char_poly M):=
 begin
-  apply monic_of_degree_le (fintype.card n),
-  {
-    sorry,
-  },
-  { rw high_coeff_char_poly_eq_coeff_prod_diag,
-    sorry,
-    omega, }
-end
-
-lemma monic_prod_monic {α : Type u} (s : finset α) (f : α → polynomial R) :
-  (∀ a : α, a ∈ s → monic (f a)) → monic (s.prod f) :=
-by { apply prod_induction, apply monic_mul, apply monic_one }
-
-theorem deg_char_poly_eq_dim [nonzero R] (M: matrix n n R) :
-(char_poly M).degree = fintype.card n :=
-begin
-  sorry
+  classical,
+  by_cases h : nonzero R,
+  { apply @char_poly_monic_of_nonzero _ _ _ _ _ h, },
+  { have : ∀ x : R, x = 0,
+    { intro, contrapose! h, exact nonzero.of_ne h },
+    repeat { rw this (next_coeff _) }, unfold monic,
+    transitivity, apply this, symmetry, apply this, }
 end
 
 @[simp]
@@ -196,8 +253,8 @@ begin
   rw quux, simp,
 end
 
+/-- The second-highest coefficient, or 0 for constants -/
 def next_coeff (p : polynomial R) : R := ite (p.nat_degree = 0) 0 p.coeff (p.nat_degree - 1)
--- docstring?
 
 lemma add_smul_X_pow_erase (p : polynomial R) :
 p = p.leading_coeff • X ^ p.nat_degree + finsupp.erase p.nat_degree p :=
@@ -295,7 +352,15 @@ end
 lemma next_coeff_C_eq_zero (c : R) :
 next_coeff (C c) = 0 := by {rw next_coeff, simp}
 
-lemma next_coeff_prod_monic {α : Type u} [decidable_eq α]
+lemma next_coeff_of_pos_nat_degree (p : polynomial R) :
+  0 < p.nat_degree → next_coeff p = p.coeff (p.nat_degree - 1) :=
+by { intro h, rw next_coeff, rw if_neg, intro contra, rw contra at h, apply lt_irrefl 0 h, }
+
+@[simp]
+lemma next_coeff_X_sub_C_eq_neg_C [nonzero R] (c : R) : next_coeff (X - C c) = - c :=
+by { rw next_coeff_of_pos_nat_degree; simp [nat_degree_X_sub_C] }
+
+lemma next_coeff_prod_monic
   (s : finset α) (f : α → polynomial R) (h : ∀ a : α, a ∈ s → monic (f a)) :
 next_coeff (s.prod f) = s.sum (λ (a : α), next_coeff (f a)) :=
 begin
@@ -315,16 +380,19 @@ begin
 end
 
 --sort of a special case of Vieta?
-lemma card_pred_coeff_prod_X_sub_C {α : Type*} [decidable_eq α] (s : finset α) (f : α → R) :
-  0 < s.card → (∏ i in s, (X - C (f i))).coeff (s.card - 1) = s.sum f :=
+lemma card_pred_coeff_prod_X_sub_C [nonzero R] (s : finset α) (f : α → R) :
+  0 < s.card → (∏ i in s, (X - C (f i))).coeff (s.card - 1) = -s.sum f :=
 begin
-  apply s.induction_on, simp,
-  sorry,
+  have h := nat_degree_prod_eq' s (λ i : α, (X - C (f i))),
+  simp_rw nat_degree_X_sub_C at h, rw ← card_eq_sum_ones at h, rw ← h, swap,
+  { simp_rw (monic_X_sub_C _).leading_coeff, rw prod_const_one, exact one_ne_zero, },
+  intro pos, rw ← next_coeff_of_pos_nat_degree _ pos, rw next_coeff_prod_monic, simp,
+  simp [monic_X_sub_C],
 end
 
 --shouldn't need these instances, but might need casework
 theorem trace_from_char_poly [nonzero R] [inhabited n] (M: matrix n n R) :
-(matrix.trace n R R) M = (char_poly M).coeff (fintype.card n - 1) :=
+(matrix.trace n R R) M = -(char_poly M).coeff (fintype.card n - 1) :=
 begin
   rw high_coeff_char_poly_eq_coeff_prod_diag, swap, refl,
   rw [fintype.card, card_pred_coeff_prod_X_sub_C univ (λ i : n, M i i)], simp,
@@ -370,13 +438,10 @@ end
 @[instance] instance matrix.char_p [inhabited n] (p : ℕ) [char_p R p] : char_p (matrix n n R) p :=
 { cast_eq_zero_iff :=
   begin
-    intro k,
-    have := _inst_5.cast_eq_zero_iff, have hk := this k, clear this,
-    rw ← hk, repeat {rw ← nat.cast_zero}, repeat {rw ← (scalar n).map_nat_cast},
+    intro k, rw ← char_p.cast_eq_zero_iff R p k,
+    repeat {rw ← nat.cast_zero}, repeat {rw ← (scalar n).map_nat_cast},
     rw matrix.scalar_inj, refl,
   end }
-
-
 
 lemma det_pow (k : ℕ) (M : matrix n n R) :
 (M ^ k).det = (M.det) ^ k :=
@@ -384,7 +449,6 @@ begin
   induction k with k hk, simp,
   repeat {rw pow_succ}, rw ← hk, simp,
 end
-
 
 theorem add_pow_char_of_commute (α : Type u) [ring α] {p : ℕ} [fact p.prime]
   [char_p α p] (x y : α) :
