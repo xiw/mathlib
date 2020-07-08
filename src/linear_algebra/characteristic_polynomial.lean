@@ -396,10 +396,11 @@ begin
   transitivity,
   { refine finset.sum_eq_single 0 _ _,
     { intros b h1 h2,
-      have := nat.prime.dvd_choose_self (nat.pos_of_ne_zero h2) (finset.mem_range.1 h1) hp,
+      -- have := nat.prime.dvd_choose_self,
+      have := nat.prime.dvd_choose_self (nat.pos_of_ne_zero h2) (finset.mem_range.1 h1) (by assumption),
       rw [← nat.div_mul_cancel this, nat.cast_mul, char_p.cast_eq_zero α p],
-      simp only [mul_zero] },
-    { intro H, exfalso, apply H, exact finset.mem_range.2 hp.pos } },
+      simp only [mul_zero], },
+    { intro H, contrapose! H, rw finset.mem_range, apply nat.prime.pos, assumption, } },
   rw [pow_zero, nat.sub_zero, one_mul, nat.choose_zero_right, nat.cast_one, mul_one]
 end
 
