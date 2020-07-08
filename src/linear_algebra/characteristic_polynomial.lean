@@ -481,7 +481,7 @@ variables (p : ℕ) [fact p.prime]
 
 lemma frobenius_fixed (a : zmod p): a ^ p = a :=
 begin
-  have posp : 0 < p, { apply nat.prime.pos, apply _inst_4, },
+  have posp : 0 < p, { apply nat.prime.pos, assumption, },
   by_cases a = 0, rw h, rw zero_pow posp,
   conv_rhs {rw ← one_mul a, rw ← pow_one a}, rw ← zmod.fermat_little p h,
   rw ← pow_add, refine congr rfl _, symmetry, apply nat.succ_pred_eq_of_pos posp,
@@ -490,7 +490,7 @@ end
 lemma poly_pow_p_char_p (f : polynomial (zmod p)) :
 f ^ p = f.comp (X ^ p) :=
 begin
-  apply f.induction_on', intros, rw add_pow_char, rw [a, a_1], simp, apply _inst_4,
+  apply f.induction_on', intros, rw add_pow_char, rw [a, a_1], simp, assumption,
   intros, repeat {rw single_eq_C_mul_X}, rw mul_comp, rw mul_pow,  simp [pow_comp],
   repeat {rw ← pow_mul}, rw mul_comm p n, rw ← C.map_pow, rw frobenius_fixed p a,
 end
