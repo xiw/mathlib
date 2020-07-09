@@ -6,6 +6,7 @@ Authors: Scott Morrison
 import ring_theory.matrix_algebra
 import ring_theory.polynomial_algebra
 import linear_algebra.nonsingular_inverse
+import tactic.apply_fun -- should this be in tactic.basic ?
 
 /-!
 # The Cayley-Hamilton theorem, over a commutative ring.

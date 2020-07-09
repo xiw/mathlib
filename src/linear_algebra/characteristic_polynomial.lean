@@ -276,28 +276,24 @@ begin
     refl }
 end
 
-lemma monic_add_X_pow_erase {p : polynomial R} :
-monic p → p = X ^ p.nat_degree + finsupp.erase p.nat_degree p :=
+lemma monic_add_X_pow_erase {p : polynomial R} (hp : p.monic) :
+p = X ^ p.nat_degree + finsupp.erase p.nat_degree p :=
 begin
-  intro mon,
-  rw monic at mon,
   conv_lhs {rw add_smul_X_pow_erase p},
-  rw mon,
-  simp
+  rw monic.leading_coeff, simpa,
 end
 
 lemma next_coeff_erase (p : polynomial R) :
 (finsupp.erase p.nat_degree p) (p.nat_degree - 1) = next_coeff p :=
 begin
   unfold next_coeff,
-  by_cases p.nat_degree = 0,
-  { rw if_pos h,
-  have h0 : p.nat_degree - 1 = 0 := by omega,
-  rw h0, rw h, rw finsupp.erase_same, refl,
+  split_ifs,
+  { have h0 : p.nat_degree - 1 = 0 := by omega,
+    rw h0, rw h, rw finsupp.erase_same, refl,
   },
-  { rw if_neg h,
-  have h0 : p.nat_degree - 1 ≠ p.nat_degree := by omega,
-  rw finsupp.erase_ne h0, refl,
+  {
+    have h0 : p.nat_degree - 1 ≠ p.nat_degree := by omega,
+    rw finsupp.erase_ne h0, refl,
   }
 end
 
@@ -528,10 +524,22 @@ end
 --  rw ring_hom.map_pow,
 --end
 
+@[simp]
+lemma empty_matrix_eq_zero {R : Type*} [ring R] (hn : ¬ nonempty n) (M : matrix n n R) :
+M = 0 :=
+begin
+  ext, contrapose! hn, use i,
+end
 
-lemma char_poly_pow_p_char_p [inhabited n] (M : matrix n n (zmod p)) (hp : p % 2 = 1) :
+
+lemma char_poly_pow_p_char_p (M : matrix n n (zmod p)) (hp : p % 2 = 1) :
 char_poly (M ^ p) = char_poly M :=
 begin
+  classical,
+  by_cases hn : nonempty n, letI := hn, haveI : inhabited n := by { inhabit n, assumption },
+  clear _inst_1 hn,
+  swap, { congr, rw empty_matrix_eq_zero hn M, apply empty_matrix_eq_zero hn },
+
   apply frobenius_inj (polynomial (zmod p)) p, repeat {rw frobenius_def},
   rw poly_pow_p_char_p p (char_poly (M ^ p)),
   unfold char_poly, unfold char_matrix, rw ← det_pow,
