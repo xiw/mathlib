@@ -93,7 +93,7 @@ end fixed_points
 
 variable {M : matrix n n R}
 
-lemma nat_degree_char_matrix_val [nonzero R] (i j : n) :
+lemma nat_degree_char_matrix_val [nontrivial R] (i j : n) :
   (char_matrix M i j).nat_degree = ite (i = j) 1 0 :=
 by { by_cases i = j, simp [h, ← degree_eq_iff_nat_degree_eq_of_pos (nat.succ_pos 0)], simp [h], }
 
@@ -135,7 +135,7 @@ begin
   have hone : M = 1, ext, exfalso, apply h i, rw hone, simp,
 end
 
-theorem degree_char_poly_eq_dim [nonzero R] (M: matrix n n R) :
+theorem degree_char_poly_eq_dim [nontrivial R] (M: matrix n n R) :
 (char_poly M).degree = fintype.card n :=
 begin
   by_cases fintype.card n = 0, rw h, unfold char_poly, rw det_of_dim_zero, simpa,
@@ -149,11 +149,11 @@ begin
   rw ← nat.pred_eq_sub_one, apply nat.pred_lt, apply h,
 end
 
-theorem nat_degree_char_poly_eq_dim [nonzero R] (M: matrix n n R) :
+theorem nat_degree_char_poly_eq_dim [nontrivial R] (M: matrix n n R) :
   (char_poly M).nat_degree = fintype.card n :=
 nat_degree_eq_of_degree_eq_some (degree_char_poly_eq_dim M)
 
-lemma char_poly_monic_of_nonzero [nonzero R] (M : matrix n n R):
+lemma char_poly_monic_of_nontrivial [nontrivial R] (M : matrix n n R):
   monic (char_poly M):=
 begin
   by_cases fintype.card n = 0, rw [char_poly, det_of_dim_zero h], apply monic_one,
@@ -170,12 +170,9 @@ lemma char_poly_monic (M : matrix n n R):
   monic (char_poly M):=
 begin
   classical,
-  by_cases h : nonzero R,
-  { apply @char_poly_monic_of_nonzero _ _ _ _ _ h, },
-  { have : ∀ x : R, x = 0,
-    { intro, contrapose! h, exact nonzero.of_ne h },
-    repeat { rw this (next_coeff _) }, unfold monic,
-    transitivity, apply this, symmetry, apply this, }
+  by_cases h : nontrivial R,
+  { apply @char_poly_monic_of_nontrivial _ _ _ _ _ h, },
+  { unfold monic, rw nontrivial_iff at h, push_neg at h, apply h, }
 end
 
 @[simp]
@@ -221,7 +218,7 @@ begin
 end
 
 
-lemma monic.nat_degree_mul_eq [nonzero R] [decidable_eq R] {p q : polynomial R} (hp : p.monic) (hq : q.monic) :
+lemma monic.nat_degree_mul_eq [nontrivial R] [decidable_eq R] {p q : polynomial R} (hp : p.monic) (hq : q.monic) :
 (p*q).nat_degree = p.nat_degree + q.nat_degree :=
 begin
   suffices : p.nat_degree + q.nat_degree ≤ (p*q).nat_degree,
@@ -308,10 +305,8 @@ lemma next_coeff_mul_monic {p q : polynomial R} (hp : monic p) (hq : monic q) :
 next_coeff (p * q) = next_coeff p + next_coeff q :=
 begin
   classical,
-  by_cases h : nonzero R, swap,
-  { have : ∀ x : R, x = 0,
-    { intro, contrapose! h, exact nonzero.of_ne h },
-    repeat { rw this (next_coeff _) }, ring },
+  by_cases h : nontrivial R, swap,
+  { rw nontrivial_iff at h, push_neg at h, apply h, },
   letI := h,
   have := monic.nat_degree_mul_eq hp hq,
   dsimp [next_coeff], rw this, simp [hp, hq], clear this,
@@ -357,7 +352,7 @@ lemma next_coeff_of_pos_nat_degree (p : polynomial R) :
 by { intro h, rw next_coeff, rw if_neg, intro contra, rw contra at h, apply lt_irrefl 0 h, }
 
 @[simp]
-lemma next_coeff_X_sub_C_eq_neg_C [nonzero R] (c : R) : next_coeff (X - C c) = - c :=
+lemma next_coeff_X_sub_C_eq_neg_C [nontrivial R] (c : R) : next_coeff (X - C c) = - c :=
 by { rw next_coeff_of_pos_nat_degree; simp [nat_degree_X_sub_C] }
 
 lemma next_coeff_prod_monic
@@ -380,7 +375,7 @@ begin
 end
 
 --sort of a special case of Vieta?
-lemma card_pred_coeff_prod_X_sub_C [nonzero R] (s : finset α) (f : α → R) :
+lemma card_pred_coeff_prod_X_sub_C [nontrivial R] (s : finset α) (f : α → R) :
   0 < s.card → (∏ i in s, (X - C (f i))).coeff (s.card - 1) = -s.sum f :=
 begin
   have h := nat_degree_prod_eq' s (λ i : α, (X - C (f i))),
@@ -391,7 +386,7 @@ begin
 end
 
 --shouldn't need these instances, but might need casework
-theorem trace_from_char_poly [nonzero R] [inhabited n] (M: matrix n n R) :
+theorem trace_from_char_poly [nontrivial R] [inhabited n] (M: matrix n n R) :
 (matrix.trace n R R) M = -(char_poly M).coeff (fintype.card n - 1) :=
 begin
   rw high_coeff_char_poly_eq_coeff_prod_diag, swap, refl,
@@ -435,11 +430,11 @@ begin
   rw h,
 end
 
-@[instance] instance matrix.char_p [inhabited n] (p : ℕ) [char_p R p] : char_p (matrix n n R) p :=
+instance matrix.char_p [inhabited n] (p : ℕ) [char_p R p] : char_p (matrix n n R) p :=
 { cast_eq_zero_iff :=
   begin
     intro k, rw ← char_p.cast_eq_zero_iff R p k,
-    repeat {rw ← nat.cast_zero}, repeat {rw ← (scalar n).map_nat_cast},
+    rw ← nat.cast_zero, repeat {rw ← (scalar n).map_nat_cast},
     rw matrix.scalar_inj, refl,
   end }
 
@@ -526,12 +521,12 @@ begin
 end
 
 
-lemma foobar (M : matrix n n R) (i j : n):
-  (mat_C M) ^ p = mat_C (M ^ p) :=
-begin
-  unfold mat_C,
-  rw ring_hom.map_pow,
-end
+--lemma foobar (M : matrix n n R) (i j : n):
+--  (mat_C M) ^ p = mat_C (M ^ p) :=
+--begin
+--  unfold mat_C,
+--  rw ring_hom.map_pow,
+--end
 
 
 lemma char_poly_pow_p_char_p [inhabited n] (M : matrix n n (zmod p)) (hp : p % 2 = 1) :
