@@ -4,11 +4,12 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Aaron Anderson, Jalex Stark.
 -/
 
-import linear_algebra.cayley_hamilton
+import linear_algebra.char_poly
 import linear_algebra.matrix
 import ring_theory.polynomial.basic
 import data.zmod.basic
 import number_theory.quadratic_reciprocity
+import tactic.squeeze
 
 noncomputable theory
 
@@ -396,11 +397,23 @@ begin
   unfold matrix.det, simp [f.map_sum, f.map_prod],
 end
 
+lemma matrix.scalar.commute (r : R) (M : matrix n n R) : commute (scalar n r) M :=
+by { unfold commute, unfold semiconj_by, simp }
+
 lemma eval_mat_poly_equiv (M : matrix n n (polynomial R)) (r : R) (i j : n) :
   polynomial.eval r (M i j) = polynomial.eval ((scalar n) r) (mat_poly_equiv M) i j :=
 begin
-  unfold polynomial.eval, unfold eval₂, unfold finsupp.sum, rw sum_apply, rw sum_apply,
-  sorry,
+  unfold polynomial.eval, unfold eval₂,
+  transitivity finsupp.sum (mat_poly_equiv M) (λ (e : ℕ) (a : matrix n n R),
+    (a * (scalar n) r ^ e) i j),
+  { simp_rw ← (scalar n).map_pow, simp_rw ← (matrix.scalar.commute _ _).eq,
+    simp only [coe_scalar, matrix.one_mul, ring_hom.id_apply,
+      smul_val, mul_eq_mul, algebra.smul_mul_assoc],
+    have h : ∀ x : ℕ, (λ (e : ℕ) (a : R), r ^ e * a) x 0 = 0 := by simp,
+    rw ← finsupp.sum_map_range_index h, swap, refl,
+    refine congr (congr rfl _) (by {ext, rw mul_comm}), ext, rw finsupp.map_range_apply,
+    simp [apply_eq_coeff], },
+  { unfold finsupp.sum, rw sum_apply, rw sum_apply, dsimp, refl, }
 end
 
 lemma eval_det (M : matrix n n (polynomial R)) (r : R) :
@@ -485,9 +498,6 @@ begin
   intros, repeat {rw single_eq_C_mul_X}, rw mul_comp, rw mul_pow,  simp [pow_comp],
   repeat {rw ← pow_mul}, rw mul_comm p n, rw ← C.map_pow, rw frobenius_fixed p a,
 end
-
-lemma matrix.scalar.commute (r : R) (M : matrix n n R) : commute (scalar n r) M :=
-by { unfold commute, unfold semiconj_by, simp }
 
 variables {S : Type u} [ring S] [algebra R S]
 --def alg_hom_on_matrix_vals (f : R →ₐ[R] S) : (matrix n n R) →ₐ[R] (matrix n n S) :=

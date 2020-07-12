@@ -3,15 +3,26 @@ Copyright (c) 2020 Scott Morrison. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Scott Morrison
 -/
+import tactic.apply_fun
 import ring_theory.matrix_algebra
 import ring_theory.polynomial_algebra
 import linear_algebra.nonsingular_inverse
 import tactic.apply_fun -- should this be in tactic.basic ?
+import tactic.squeeze
 
 /-!
-# The Cayley-Hamilton theorem, over a commutative ring.
+# Characteristic polynomials and the Cayley-Hamilton theorem
 
-We use a nice proof from http://drorbn.net/AcademicPensieve/2015-12/CayleyHamilton.pdf
+We define characteristic polynomials of matrices and
+prove the Cayley–Hamilton theorem over arbitrary commutative rings.
+
+## Main definitions
+
+* `char_poly` is the characteristic polynomial of a matrix.
+
+## Implementation details
+
+We follow a nice proof from http://drorbn.net/AcademicPensieve/2015-12/CayleyHamilton.pdf
 -/
 
 noncomputable theory
@@ -31,15 +42,17 @@ The "characteristic matrix" of `M : matrix n n R` is the matrix of polynomials $
 The determinant of this matrix is the characteristic polynomial.
 -/
 def char_matrix (M : matrix n n R) : matrix n n (polynomial R) :=
-matrix.scalar n (X : polynomial R) - (λ i j, C (M i j))
+matrix.scalar n (X : polynomial R) - (C : R →+* polynomial R).map_matrix M
 
 @[simp] lemma char_matrix_apply_eq (M : matrix n n R) (i : n) :
   char_matrix M i i = (X : polynomial R) - C (M i i) :=
-by simp only [char_matrix, sub_left_inj, pi.sub_apply, scalar_apply_eq]
+by simp only [char_matrix, sub_left_inj, pi.sub_apply, scalar_apply_eq,
+  ring_hom.map_matrix_apply, map_apply]
 
 @[simp] lemma char_matrix_apply_ne (M : matrix n n R) (i j : n) (h : i ≠ j) :
   char_matrix M i j = - C (M i j) :=
-by simp only [char_matrix, pi.sub_apply, scalar_apply_ne _ _ _ h, zero_sub]
+by simp only [char_matrix, pi.sub_apply, scalar_apply_ne _ _ _ h, zero_sub,
+  ring_hom.map_matrix_apply, map_apply]
 
 lemma mat_poly_equiv_char_matrix (M : matrix n n R) :
   mat_poly_equiv (char_matrix M) = X - C M :=
@@ -55,7 +68,7 @@ begin
 end
 
 /--
-The characteristic polynomial of a matrix `M` is given by $det (t I - M)$.
+The characteristic polynomial of a matrix `M` is given by $\det (t I - M)$.
 -/
 def char_poly (M : matrix n n R) : polynomial R :=
 (char_matrix M).det
@@ -67,15 +80,14 @@ applied to the matrix itself, is zero.
 This holds over any commutative ring.
 -/
 -- This proof follows http://drorbn.net/AcademicPensieve/2015-12/CayleyHamilton.pdf
-theorem cayley_hamilton (M : matrix n n R) :
+theorem char_poly_map_eval_self (M : matrix n n R) :
   ((char_poly M).map (algebra_map R (matrix n n R))).eval M = 0 :=
 begin
   -- We begin with the fact $χ_M(t) I = adjugate (t I - M) * (t I - M)$,
   -- as an identity in `matrix n n (polynomial R)`.
-  have h := calc
-    (char_poly M) • (1 : matrix n n (polynomial R))
-         = (char_matrix M).det • (1 : matrix n n (polynomial R)) : rfl
-     ... = adjugate (char_matrix M) * (char_matrix M)            : (adjugate_mul _).symm,
+  have h : (char_poly M) • (1 : matrix n n (polynomial R)) =
+    adjugate (char_matrix M) * (char_matrix M) :=
+    (adjugate_mul _).symm,
   -- Using the algebra isomorphism `matrix n n (polynomial R) ≃ₐ[R] polynomial (matrix n n R)`,
   -- we have the same identity in `polynomial (matrix n n R)`.
   apply_fun mat_poly_equiv at h,
