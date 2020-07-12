@@ -10,8 +10,10 @@ import ring_theory.polynomial.basic
 import data.zmod.basic
 import number_theory.quadratic_reciprocity
 import tactic.squeeze
+import algebra.polynomial
 
 noncomputable theory
+
 
 universes u v w
 
@@ -23,46 +25,6 @@ variables {n : Type w} [fintype n] [decidable_eq n]
 variables {α : Type w} [decidable_eq α]
 
 open finset
-
-section poly_big_ops
-
-namespace polynomial
-
-variables (s : finset α) (f : α → polynomial R)
-
-lemma nat_degree_prod_le : (s.prod f).nat_degree ≤ ∑ i in s, (f i).nat_degree :=
-begin
-  apply s.induction_on, simp,intros a s anins ih,
-  rw [prod_insert anins, sum_insert anins],
-  transitivity (f a).nat_degree + (∏ (x : α) in s, (f x)).nat_degree,
-  apply polynomial.nat_degree_mul_le, apply add_le_add_left ih,
-end
-
-lemma leading_coeff_prod' (h : ∏ i in s, (f i).leading_coeff ≠ 0) :
-  (∏ i in s, f i).leading_coeff = ∏ i in s, (f i).leading_coeff :=
-begin
-  revert h, apply s.induction_on, simp, intros a s anins ih,
-  repeat {rw prod_insert anins},
-  intro nz, rw polynomial.leading_coeff_mul'; rwa ih, repeat {apply right_ne_zero_of_mul nz},
-end
-
-lemma nat_degree_prod_eq' (h : ∏ i in s, (f i).leading_coeff ≠ 0) :
-  (s.prod f).nat_degree = ∑ i in s, (f i).nat_degree :=
-begin
-  revert h, apply s.induction_on, simp, intros a s anins ih,
-  rw [prod_insert anins, prod_insert anins, sum_insert anins],
-  intro nz, rw polynomial.nat_degree_mul_eq', rw ih, apply right_ne_zero_of_mul nz,
-  rwa polynomial.leading_coeff_prod', apply right_ne_zero_of_mul nz,
-end
-
-lemma monic_prod_monic :
-  (∀ a : α, a ∈ s → monic (f a)) → monic (s.prod f) :=
-by { apply prod_induction, apply monic_mul, apply monic_one }
-
-end polynomial
-
-end poly_big_ops
-
 open polynomial
 
 section fixed_points
@@ -71,11 +33,9 @@ lemma gt_one_nonfixed_point_of_nonrefl {σ : equiv.perm n} (h : σ ≠ equiv.ref
 1 < (filter (λ (x : n), ¬ σ x = x) univ).card :=
 begin
   rw one_lt_card_iff,
-  contrapose! h,
-  ext, dsimp,
+  contrapose! h, ext, dsimp,
   have := h (σ x) x,
-  cases this, swap, cases this,
-  all_goals { revert this, simp }
+  simp at this; tauto,
 end
 
 lemma lt_card_sub_one_fixed_point_of_nonrefl {σ : equiv.perm n} (h : σ ≠ equiv.refl n) :
@@ -372,14 +332,22 @@ begin
 end
 
 --sort of a special case of Vieta?
+lemma card_pred_coeff_prod_X_sub_C' [nontrivial R] {s : finset α} (hs : 0 < s.card) (f : α → R) :
+next_coeff ∏ i in s, (X - C (f i)) = -s.sum f :=
+by { rw next_coeff_prod_monic; { simp [monic_X_sub_C] } }
+
 lemma card_pred_coeff_prod_X_sub_C [nontrivial R] (s : finset α) (f : α → R) :
   0 < s.card → (∏ i in s, (X - C (f i))).coeff (s.card - 1) = -s.sum f :=
 begin
-  have h := nat_degree_prod_eq' s (λ i : α, (X - C (f i))),
-  simp_rw nat_degree_X_sub_C at h, rw ← card_eq_sum_ones at h, rw ← h, swap,
-  { simp_rw (monic_X_sub_C _).leading_coeff, rw prod_const_one, exact one_ne_zero, },
-  intro pos, rw ← next_coeff_of_pos_nat_degree _ pos, rw next_coeff_prod_monic, simp,
-  simp [monic_X_sub_C],
+  intro hs,
+  convert card_pred_coeff_prod_X_sub_C' _ _, any_goals { assumption },
+  rw next_coeff, split_ifs,
+  { rw nat_degree_prod_eq_of_monic at h,
+    swap, { intros, apply monic_X_sub_C },
+    rw sum_eq_zero_iff at h,
+    simp_rw nat_degree_X_sub_C at h, contrapose! h, norm_num,
+    exact multiset.card_pos_iff_exists_mem.mp hs },
+  congr, rw nat_degree_prod_eq_of_monic; { simp [nat_degree_X_sub_C, monic_X_sub_C] },
 end
 
 --shouldn't need these instances, but might need casework
@@ -551,22 +519,23 @@ begin
   swap, { congr, rw empty_matrix_eq_zero hn M, apply empty_matrix_eq_zero hn },
 
   apply frobenius_inj (polynomial (zmod p)) p, repeat {rw frobenius_def},
-  rw poly_pow_p_char_p p (char_poly (M ^ p)),
-  unfold char_poly, unfold char_matrix, rw ← det_pow,
-  repeat {rw sub_eq_add_neg},
-  rw add_pow_char_of_commute (matrix n n (polynomial (zmod p))), swap, apply matrix.scalar.commute,
-  swap, apply_instance,
-  swap, exact matrix.char_p p,
-  rw ← (scalar n).map_pow, rw comp_det,
-  rw neg_pow, rw neg_one_pow_eq_pow_mod_two, rw hp,
-  simp only [neg_val, neg_mul, matrix.one_mul, pow_one, neg_inj, mul_eq_mul],
-  refine congr rfl _, ext, refine congr (congr rfl _) rfl,
-  simp only [add_comp, neg_val, X_comp, coeff_add, mul_comp, add_val],
-  refine congr (congr rfl _) _,
-  { by_cases i = j; simp [h], },
-  rw ← ring_hom.map_neg, rw C_comp, rw ring_hom.map_neg,
-  simp_rw ← mat_C_apply,
-  rw ring_hom.map_pow,
+  rw poly_pow_p_char_p p,-- (char_poly (M ^ p)),
+    sorry,
+  -- unfold char_poly, unfold char_matrix, rw ← det_pow,
+  -- repeat {rw sub_eq_add_neg},
+  -- rw add_pow_char_of_commute (matrix n n (polynomial (zmod p))), swap, apply matrix.scalar.commute,
+  -- swap, apply_instance,
+  -- swap, exact matrix.char_p p,
+  -- rw ← (scalar n).map_pow, rw comp_det,
+  -- rw neg_pow, rw neg_one_pow_eq_pow_mod_two, rw hp,
+  -- simp only [neg_val, neg_mul, matrix.one_mul, pow_one, neg_inj, mul_eq_mul],
+  -- refine congr rfl _, ext, refine congr (congr rfl _) rfl,
+  -- simp only [add_comp, neg_val, X_comp, coeff_add, mul_comp, add_val],
+  -- refine congr (congr rfl _) _,
+  -- { by_cases i = j; simp [h], },
+  -- rw ← ring_hom.map_neg, rw C_comp, rw ring_hom.map_neg,
+  -- simp_rw ← mat_C_apply,
+  -- rw ring_hom.map_pow,
 end
 
 end char_p
