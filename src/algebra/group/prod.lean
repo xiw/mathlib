@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Simon Hudon, Patrick Massot, Yury Kudryashov
 -/
 import algebra.group.hom
+import algebra.group_with_zero
 import data.prod
 
 /-!
@@ -156,15 +157,15 @@ protected def prod (f : M →* N) (g : M →* P) : M →* N × P :=
 @[simp, to_additive prod_apply]
 lemma prod_apply (f : M →* N) (g : M →* P) (x) : f.prod g x = (f x, g x) := rfl
 
-@[to_additive fst_comp_prod]
+@[simp, to_additive fst_comp_prod]
 lemma fst_comp_prod (f : M →* N) (g : M →* P) : (fst N P).comp (f.prod g) = f :=
 ext $ λ x, rfl
 
-@[to_additive snd_comp_prod]
+@[simp, to_additive snd_comp_prod]
 lemma snd_comp_prod (f : M →* N) (g : M →* P) : (snd N P).comp (f.prod g) = g :=
 ext $ λ x, rfl
 
-@[to_additive prod_unique]
+@[simp, to_additive prod_unique]
 lemma prod_unique (f : M →* N × P) :
   ((fst N P).comp f).prod ((snd N P).comp f) = f :=
 ext $ λ x, by simp only [prod_apply, coe_fst, coe_snd, comp_apply, prod.mk.eta]
@@ -183,9 +184,8 @@ def prod_map : M × N →* M' × N' := (f.comp (fst M N)).prod (g.comp (snd M N)
 @[to_additive prod_map_def]
 lemma prod_map_def : prod_map f g = (f.comp (fst M N)).prod (g.comp (snd M N)) := rfl
 
--- TODO : use `rfl` once we redefine `prod.map` in stdlib
 @[simp, to_additive coe_prod_map]
-lemma coe_prod_map : ⇑(prod_map f g) = prod.map f g := funext $ λ ⟨x, y⟩, rfl
+lemma coe_prod_map : ⇑(prod_map f g) = prod.map f g := rfl
 
 @[to_additive prod_comp_prod_map]
 lemma prod_comp_prod_map (f : P →* M) (g : P →* N) (f' : M →* M') (g' : N →* N') :

@@ -7,6 +7,7 @@ Authors: Leonardo de Moura, Jeremy Avigad, Mario Carneiro
 import data.nat.sqrt
 import data.nat.gcd
 import algebra.group_power
+import tactic.wlog
 
 /-!
 # Prime numbers
@@ -33,6 +34,7 @@ open decidable
 
 /-- `prime p` means that `p` is a prime number, that is, a natural number
   at least 2 whose only divisors are `p` and `1`. -/
+@[pp_nodot]
 def prime (p : ℕ) := 2 ≤ p ∧ ∀ m ∣ p, m = 1 ∨ m = p
 
 theorem prime.two_le {p : ℕ} : prime p → 2 ≤ p := and.left
@@ -252,6 +254,51 @@ section min_fac
     end
   end
 
+  /--
+  The square of the smallest prime factor of a composite number `n` is at most `n`.
+  -/
+  lemma min_fac_sq_le_self {n : ℕ} (w : 0 < n) (h : ¬ prime n) : (min_fac n)^2 ≤ n :=
+  have t : (min_fac n) ≤ (n/min_fac n) := min_fac_le_div w h,
+  calc
+  (min_fac n)^2 = (min_fac n) * (min_fac n)   : pow_two (min_fac n)
+            ... ≤ (n/min_fac n) * (min_fac n) : mul_le_mul_right (min_fac n) t
+            ... ≤ n                           : div_mul_le_self n (min_fac n)
+
+  @[simp]
+  lemma min_fac_eq_one_iff {n : ℕ} : min_fac n = 1 ↔ n = 1 :=
+  begin
+    split,
+    { intro h,
+      by_contradiction,
+      have := min_fac_prime a,
+      rw h at this,
+      exact not_prime_one this, },
+    { rintro rfl, refl, }
+  end
+
+  @[simp]
+  lemma min_fac_eq_two_iff (n : ℕ) : min_fac n = 2 ↔ 2 ∣ n :=
+  begin
+    split,
+    { intro h,
+      convert min_fac_dvd _,
+      rw h, },
+    { intro h,
+      have ub := min_fac_le_of_dvd (le_refl 2) h,
+      have lb := min_fac_pos n,
+      -- If `interval_cases` and `norm_num` were already available here,
+      -- this would be easy and pleasant.
+      -- But they aren't, so it isn't.
+      cases h : n.min_fac with m,
+      { rw h at lb, cases lb, },
+      { cases m with m,
+        { simp at h, subst h, cases h with n h, cases n; cases h, },
+        { cases m with m,
+          { refl, },
+          { rw h at ub,
+            cases ub with _ ub, cases ub with _ ub, cases ub, } } } }
+  end
+
 end min_fac
 
 theorem exists_dvd_of_not_prime {n : ℕ} (n2 : 2 ≤ n) (np : ¬ prime n) :
@@ -335,6 +382,19 @@ theorem prime.coprime_iff_not_dvd {p n : ℕ} (pp : prime p) : coprime p n ↔ �
 theorem prime.dvd_iff_not_coprime {p n : ℕ} (pp : prime p) : p ∣ n ↔ ¬ coprime p n :=
 iff_not_comm.2 pp.coprime_iff_not_dvd
 
+theorem prime.not_coprime_iff_dvd {m n : ℕ} :
+  ¬ coprime m n ↔ ∃p, prime p ∧ p ∣ m ∧ p ∣ n :=
+begin
+  apply iff.intro,
+  { intro h,
+    exact ⟨min_fac (gcd m n), min_fac_prime h,
+      (dvd.trans (min_fac_dvd (gcd m n)) (gcd_dvd_left m n)),
+      (dvd.trans (min_fac_dvd (gcd m n)) (gcd_dvd_right m n))⟩ },
+  { intro h,
+    cases h with p hp,
+    apply nat.not_coprime_of_dvd_of_dvd (prime.one_lt hp.1) hp.2.1 hp.2.2 }
+end
+
 theorem prime.dvd_mul {p m n : ℕ} (pp : prime p) : p ∣ m * n ↔ p ∣ m ∨ p ∣ n :=
 ⟨λ H, or_iff_not_imp_left.2 $ λ h,
   (pp.coprime_iff_not_dvd.2 h).dvd_of_dvd_mul_left H,
@@ -400,19 +460,33 @@ begin
   induction m with m IH generalizing i, {simp [pow_succ, le_zero_iff] at *},
   by_cases p ∣ i,
   { cases h with a e, subst e,
-    rw [pow_succ, mul_comm (p^m) p, nat.mul_dvd_mul_iff_left pp.pos, IH],
+    rw [nat.pow_succ, mul_comm (p^m) p, nat.mul_dvd_mul_iff_left pp.pos, IH],
     split; intro h; rcases h with ⟨k, h, e⟩,
     { exact ⟨succ k, succ_le_succ h, by rw [mul_comm, e]; refl⟩ },
     cases k with k,
     { apply pp.not_dvd_one.elim,
       simp at e, rw ← e, apply dvd_mul_right },
     { refine ⟨k, le_of_succ_le_succ h, _⟩,
-      rwa [mul_comm, pow_succ, nat.mul_left_inj pp.pos] at e } },
+      rwa [mul_comm, nat.pow_succ, nat.mul_left_inj pp.pos] at e } },
   { split; intro d,
     { rw (pp.coprime_pow_of_not_dvd h).eq_one_of_dvd d,
       exact ⟨0, zero_le _, rfl⟩ },
     { rcases d with ⟨k, l, e⟩,
       rw e, exact pow_dvd_pow _ l } }
+end
+
+/--
+If `p` is prime,
+and `a` doesn't divide `p^k`, but `a` does divide `p^(k+1)`
+then `a = p^(k+1)`.
+-/
+lemma eq_prime_pow_of_dvd_least_prime_pow
+  {a p k : ℕ} (pp : prime p) (h₁ : ¬(a ∣ p^k)) (h₂ : a ∣ p^(k+1)) :
+  a = p^(k+1) :=
+begin
+  obtain ⟨l, ⟨h, rfl⟩⟩ := (dvd_prime_pow pp).1 h₂,
+  congr,
+  exact le_antisymm h (not_le.1 ((not_congr (pow_dvd_pow_iff_le_right (prime.one_lt pp))).1 h₁)),
 end
 
 section

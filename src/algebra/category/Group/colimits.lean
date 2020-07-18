@@ -174,8 +174,10 @@ instance : add_comm_group (colimit_type F) :=
   end, }
 
 @[simp] lemma quot_zero : quot.mk setoid.r zero = (0 : colimit_type F) := rfl
-@[simp] lemma quot_neg (x) : quot.mk setoid.r (neg x) = (-(quot.mk setoid.r x) : colimit_type F) := rfl
-@[simp] lemma quot_add (x y) : quot.mk setoid.r (add x y) = ((quot.mk setoid.r x) + (quot.mk setoid.r y) : colimit_type F) := rfl
+@[simp] lemma quot_neg (x) :
+  quot.mk setoid.r (neg x) = (-(quot.mk setoid.r x) : colimit_type F) := rfl
+@[simp] lemma quot_add (x y) :
+  quot.mk setoid.r (add x y) = ((quot.mk setoid.r x) + (quot.mk setoid.r y) : colimit_type F) := rfl
 
 /-- The bundled abelian group giving the colimit of a diagram. -/
 def colimit : AddCommGroup := AddCommGroup.of (colimit_type F)
@@ -184,7 +186,8 @@ def colimit : AddCommGroup := AddCommGroup.of (colimit_type F)
 def cocone_fun (j : J) (x : F.obj j) : colimit_type F :=
 quot.mk _ (of j x)
 
-/-- The group homomorphism from a given abelian group in the diagram to the colimit abelian group. -/
+/-- The group homomorphism from a given abelian group in the diagram to the colimit abelian
+group. -/
 def cocone_morphism (j : J) : F.obj j ⟶ colimit F :=
 { to_fun := cocone_fun F j,
   map_zero' := by apply quot.sound; apply relation.zero,
@@ -208,7 +211,8 @@ def colimit_cocone : cocone F :=
   ι :=
   { app := cocone_morphism F } }.
 
-/-- The function from the free abelian group on the diagram to the cone point of any other cocone. -/
+/-- The function from the free abelian group on the diagram to the cone point of any other
+cocone. -/
 @[simp] def desc_fun_lift (s : cocone F) : prequotient F → s.X
 | (of j x)  := (s.ι.app j) x
 | zero      := 0
@@ -279,7 +283,7 @@ def colimit_is_colimit : is_colimit (colimit_cocone F) :=
     refl
   end }.
 
-instance has_colimits_AddCommGroup : has_colimits.{v} AddCommGroup.{v} :=
+instance has_colimits_AddCommGroup : has_colimits AddCommGroup :=
 { has_colimits_of_shape := λ J 𝒥,
   { has_colimit := λ F, by exactI
     { cocone := colimit_cocone F,

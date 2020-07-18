@@ -264,6 +264,7 @@ by rw [show f = id, from funext H]; exact id_map o
 @[simp] theorem bind_some_right (x : roption α) : x.bind some = x :=
 by rw [bind_some_eq_map]; simp [map_id']
 
+@[simp] theorem pure_eq_some (a : α) : pure a = some a := rfl
 @[simp] theorem ret_eq_some (a : α) : return a = some a := rfl
 
 @[simp] theorem map_eq_map {α β} (f : α → β) (o : roption α) :
@@ -530,7 +531,7 @@ lemma core_def (s : set β) : core f s = {x | ∀ y, y ∈ f x → y ∈ s} := r
 lemma mem_core (x : α) (s : set β) : x ∈ core f s ↔ (∀ y, y ∈ f x → y ∈ s) :=
 iff.rfl
 
-lemma compl_dom_subset_core (s : set β) : -f.dom ⊆ f.core s :=
+lemma compl_dom_subset_core (s : set β) : f.domᶜ ⊆ f.core s :=
 assume x hx y fxy,
 absurd ((mem_dom f x).mpr ⟨y, fxy⟩) hx
 
@@ -551,7 +552,7 @@ end
 section
 open_locale classical
 
-lemma core_res (f : α → β) (s : set α) (t : set β) : core (res f s) t = -s ∪ f ⁻¹' t :=
+lemma core_res (f : α → β) (s : set α) (t : set β) : core (res f s) t = sᶜ ∪ f ⁻¹' t :=
 by { ext, rw mem_core_res, by_cases h : x ∈ s; simp [h] }
 
 end
@@ -572,7 +573,7 @@ set.eq_of_subset_of_subset
     have ys : y ∈ s, from xcore _ (roption.get_mem _),
     show x ∈ preimage f s, from  ⟨(f x).get xdom, ys, roption.get_mem _⟩)
 
-lemma core_eq (f : α →. β) (s : set β) : f.core s = f.preimage s ∪ -f.dom :=
+lemma core_eq (f : α →. β) (s : set β) : f.core s = f.preimage s ∪ f.domᶜ :=
 by rw [preimage_eq, set.union_distrib_right, set.union_comm (dom f), set.compl_union_self,
         set.inter_univ, set.union_eq_self_of_subset_right (compl_dom_subset_core f s)]
 
