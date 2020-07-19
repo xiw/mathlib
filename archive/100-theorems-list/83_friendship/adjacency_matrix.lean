@@ -5,7 +5,7 @@ Author:  Aaron Anderson, Jalex Stark.
 -/
 import linear_algebra.matrix
 import .sym_matrix
-import .simple_graph
+import combinatorics.simple_graph
 
 open_locale classical big_operators
 open finset matrix simple_graph

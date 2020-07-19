@@ -124,3 +124,14 @@ polynomial.map_C _
 
 @[simp] lemma polynomial.smul_X (m : M) : (m • polynomial.X : polynomial S) = polynomial.X :=
 polynomial.map_X _
+
+@[simp] lemma nat.smul_one (d : ℕ) : d • (1 : R) = (d : R) :=
+begin
+  induction d with k hk, { simp },
+  rw nat.succ_eq_add_one, push_cast,
+  rw ← hk, simp [add_smul],
+end
+
+@[simp]
+lemma int.smul_one (d : ℤ) (R : Type*) [ring R] : d • (1 : R) = (d : R) :=
+by apply gsmul_one

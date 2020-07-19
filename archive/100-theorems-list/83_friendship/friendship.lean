@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author:  Aaron Anderson, Jalex Stark.
 -/
 import .adjacency_matrix
-import .counting_paths
+import .path_bigraph
 import .char_poly
 import data.int.modeq
 import data.zmod.basic
