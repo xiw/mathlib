@@ -11,6 +11,7 @@ import data.zmod.basic
 import number_theory.quadratic_reciprocity
 import algebra.polynomial.big_operators
 import field_theory.separable
+import .sym_matrix -- this is where i put smul_pow
 
 noncomputable theory
 
@@ -260,7 +261,8 @@ lemma matrix.map_sub [add_group α] {β : Type*} [add_group β] (f : α →+ β)
   (M N : matrix n n α) : (M - N).map f = M.map f - N.map f :=
 by { ext, simp, }
 
-
+#check @eval₂_C
+-- X • 1
 lemma foo {n : Type u_2} (p : ℕ)
   [fintype n]
   [decidable_eq n]
@@ -269,10 +271,16 @@ lemma foo {n : Type u_2} (p : ℕ)
   ((X : polynomial (zmod p)) • 1 - (M ^ p).map C).map (expand (zmod p) p) =
     ((X : polynomial (zmod p)) • 1) ^ p - M.map C ^ p :=
 begin
+  -- rw smul_
+  -- Maybe a simpler failure, I can't get lemmas about eval₂ to fire.
+  simp, rw expand, dsimp, rw eval₂_X_pow,
+  -- rw eval₂_sub, rw coeff_sub,
+  -- rw eval₂_C,
   -- No matter what I try here, I can't rewrite or simp by `matrix.map_sub`
-  change matrix.map _ (expand (zmod p) p).to_ring_hom.to_add_monoid_hom = _,
-  dsimp,
-  simp,
+  -- change matrix.map _ (expand (zmod p) p).to_ring_hom.to_add_monoid_hom = _,
+  -- dsimp,
+  -- simp,
+  -- rw matrix.map_sub,
   -- simp [matrix.map_sub],
 
   -- Even `convert` times out...

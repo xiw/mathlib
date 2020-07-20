@@ -19,7 +19,20 @@ lemma sym_matrix_apply {M : matrix m m R} (h : sym_matrix M) (i j : m):
   M i j = M j i :=
 by { unfold sym_matrix at h, conv_rhs {rw h}, refl, }
 
-variables [ring R] -- change to semiring once we can
+
+section ugh
+
+variables {A : Type u} [semiring A] [comm_semiring R] [algebra R A]
+
+@[simp] lemma smul_pow (a : A) (r : R) (k : ℕ) : (r • a)^k = r^k • a^k :=
+begin
+  induction k with d hd, simp,
+  rw [pow_succ, hd], rw algebra.smul_mul_assoc, simp, rw smul_smul, ring,
+end
+
+end ugh
+
+variables [semiring R]
 
 variables (m) (R)
 def matrix_J : matrix m m R :=
