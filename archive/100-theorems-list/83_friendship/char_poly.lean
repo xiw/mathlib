@@ -255,12 +255,38 @@ begin
   rw [pow_succ, hd, mul_eq_mul], refl,
 end
 
+-- This is missing from matrix/basic (generalise to rectangular)
+lemma matrix.map_sub [add_group α] {β : Type*} [add_group β] (f : α →+ β)
+  (M N : matrix n n α) : (M - N).map f = M.map f - N.map f :=
+by { ext, simp, }
+
+
+lemma foo {n : Type u_2} (p : ℕ)
+  [fintype n]
+  [decidable_eq n]
+  [fact (nat.prime p)]
+  (M : matrix n n (zmod p)) :
+  ((X : polynomial (zmod p)) • 1 - (M ^ p).map C).map (expand (zmod p) p) =
+    ((X : polynomial (zmod p)) • 1) ^ p - M.map C ^ p :=
+begin
+  -- No matter what I try here, I can't rewrite or simp by `matrix.map_sub`
+  change matrix.map _ (expand (zmod p) p).to_ring_hom.to_add_monoid_hom = _,
+  dsimp,
+  simp,
+  -- simp [matrix.map_sub],
+
+  -- Even `convert` times out...
+  -- convert matrix.map_sub (expand (zmod p) p).to_ring_hom.to_add_monoid_hom,
+
+  -- Something is not right. :-)
+end
+
 lemma char_poly_pow_p_char_p (M : matrix n n (zmod p)) :
 char_poly (M ^ p) = char_poly M :=
 begin
-  classical,
+  -- classical,
   by_cases hn : nonempty n, letI := hn, haveI : inhabited n := by { inhabit n, assumption },
-  clear _inst_1 hn,
+  clear _inst hn,
   swap, { congr, rw empty_matrix_eq_zero hn M, apply empty_matrix_eq_zero hn },
 
   apply frobenius_inj (polynomial (zmod p)) p, repeat {rw frobenius_def},
@@ -270,8 +296,9 @@ begin
   unfold char_matrix,
   transitivity ((scalar n) X - C.map_matrix M) ^ p, simp,
   rw sub_pow_char_of_commute,
-  swap, { apply matrix.scalar.commute },
-  unfold expand, dsimp, simp,
+  swap, { apply matrix.scalar.commute }, swap, { refl, },
+  apply foo,
+  -- unfold expand, dsimp, simp,
   -- convert sub_pow_char_of_commute _,
   -- rw sub_pow_char_of_commute,
   -- rw ← map_pow,
