@@ -204,7 +204,7 @@ begin
   rw [adj_mat_traceless, zero_pow],
   -- but the trace is 1 mod p when computed the other way
   rw friendship_reg_adj_pow_mod_p hG dmod hd hp2, swap, apply nat.prime.pos, apply _inst,
-  simp only [trace, diag_apply, mul_one, nsmul_eq_mul, linear_map.coe_mk, sum_const],
+  simp only [matrix.trace, diag_apply, mul_one, nsmul_eq_mul, linear_map.coe_mk, sum_const],
   unfold fintype.card at Vmod, rw Vmod, rw ← nat.cast_one, rw zmod.nat_coe_zmod_eq_zero_iff_dvd,
   simp only [nat.dvd_one, nat.min_fac_eq_one_iff], linarith,
 end
