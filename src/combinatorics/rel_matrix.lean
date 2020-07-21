@@ -136,9 +136,9 @@ by simp [degree]
 
 variable {G}
 
-lemma adj_mat_mul_vec_ones_apply_of_regular {d : ℕ} (hd : regular_graph G d) (i : α) :
-  (G.adjacency_matrix R).mul_vec (λ j : α, 1) i = d :=
-by rw [← hd i, matrix.mul_vec, adjacency_matrix_dot_product]; simp [degree]
+lemma adj_mat_mul_const_vec_of_regular {d : ℕ} {r : R} (hd : regular_graph G d) :
+  (G.adjacency_matrix R).mul_vec (λ j : α, r) = λ _, d * r :=
+by { ext, rw [← hd x, matrix.mul_vec, adjacency_matrix_dot_product]; simp [degree] }
 
 end adjacency_matrix
 
