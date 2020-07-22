@@ -109,21 +109,22 @@ lemma adjacency_matrix_apply (v w : α) : G.adjacency_matrix R v w = ite (G.adj 
 
 @[simp]
 lemma adjacency_matrix_dot_product (v : α) (vec : α → R) :
-  dot_product (G.adjacency_matrix R v) vec = ∑ u in neighbors G v, vec u :=
-rel_matrix_dot_product v vec
+  dot_product (G.adjacency_matrix R v) vec = ∑ u : neighbors G v, vec u :=
+--rel_matrix_dot_product v vec
+by { rw ← rel_matrix_dot_product v vec, }
 
 @[simp]
 lemma dot_product_adjacency_matrix (v : α) (vec : α → R) :
-  dot_product vec (G.adjacency_matrix R v) = ∑ u in neighbors G v, vec u :=
+  dot_product vec (G.adjacency_matrix R v) = ∑ u : neighbors G v, vec u :=
 dot_product_rel_matrix v vec
 
 @[simp]
 lemma adjacency_matrix_mul_apply (M : matrix α α R) (v w : α) :
-  (G.adjacency_matrix R * M) v w = ∑ u in neighbors G v, M u w := rel_matrix_mul_apply M v w
+  (G.adjacency_matrix R * M) v w = ∑ u : neighbors G v, M u w := rel_matrix_mul_apply M v w
 
 @[simp]
 lemma mul_adjacency_matrix_apply (M : matrix α α R) (v w : α) :
-  (M * G.adjacency_matrix R) v w = ∑ u in neighbors G w, M v u :=
+  (M * G.adjacency_matrix R) v w = ∑ u : neighbors G w, M v u :=
 by { unfold neighbors, rw ← G.sym.eq_inv, apply mul_rel_matrix_apply, }
 
 variable (R)
