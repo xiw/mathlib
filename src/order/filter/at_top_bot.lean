@@ -56,15 +56,6 @@ lemma at_top_basis' [semilattice_sup α] (a : α) :
   ⟨λ ⟨x, _, hx⟩, ⟨x ⊔ a, le_sup_right, λ y hy, hx (le_trans le_sup_left hy)⟩,
     λ ⟨x, _, hx⟩, ⟨x, trivial, hx⟩⟩⟩
 
-lemma has_countable_basis_at_top [nonempty α] [semilattice_sup α] [encodable α] :
-  has_countable_basis (at_top : filter α) (λ _, true) Ici :=
-{ countable := countable_encodable _,
-  .. at_top_basis }
-
-lemma is_countably_generated_at_top [nonempty α] [semilattice_sup α] [encodable α] :
-  (at_top : filter $ α).is_countably_generated :=
-has_countable_basis_at_top.is_countably_generated
-
 @[instance]
 lemma at_top_ne_bot [nonempty α] [semilattice_sup α] : ne_bot (at_top : filter α) :=
 at_top_basis.ne_bot_iff.2 $ λ a _, nonempty_Ici
@@ -85,6 +76,10 @@ lemma at_top_countable_basis [nonempty α] [semilattice_sup α] [encodable α] :
   has_countable_basis (at_top : filter α) (λ _, true) Ici :=
 { countable := countable_encodable _,
   .. at_top_basis }
+
+lemma is_countably_generated_at_top [nonempty α] [semilattice_sup α] [encodable α] :
+  (at_top : filter $ α).is_countably_generated :=
+at_top_countable_basis.is_countably_generated
 
 lemma order_top.at_top_eq (α) [order_top α] : (at_top : filter α) = pure ⊤ :=
 le_antisymm (le_pure_iff.2 $ (eventually_ge_at_top ⊤).mono $ λ b, top_unique)
