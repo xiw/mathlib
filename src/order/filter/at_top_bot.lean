@@ -48,7 +48,7 @@ let ⟨z, hz⟩ := no_bot x in mem_sets_of_superset (mem_at_bot z) $ λ y h, lt_
 
 lemma at_top_basis [nonempty α] [semilattice_sup α] :
   (@at_top α _).has_basis (λ _, true) Ici :=
-has_basis_infi_principal $ directed_of_sup $ λ i j, Ici_subset_Ici.2
+has_basis_infi_principal (directed_of_sup $ λ a b, Ici_subset_Ici.2)
 
 lemma at_top_basis' [semilattice_sup α] (a : α) :
   (@at_top α _).has_basis (λ x, a ≤ x) Ici :=
