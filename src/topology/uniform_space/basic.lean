@@ -1075,7 +1075,7 @@ begin
     rw [infi_uniformity, lift'_infi],
     { simp only [nhds_eq_uniformity], refl },
     { exact assume a b, rfl } },
-   { rw [infi_of_empty h, infi_of_empty h, to_topological_space_top] }
+  { rw [infi_of_empty h, infi_of_empty h, to_topological_space_top] }
 end
 
 lemma to_topological_space_Inf {s : set (uniform_space α)} :

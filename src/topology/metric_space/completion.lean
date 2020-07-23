@@ -156,9 +156,7 @@ of the metric space structure. -/
 protected lemma completion.uniformity_dist' :
   uniformity (completion α) = (⨅ε:{ε:ℝ // ε>0}, 𝓟 {p | dist p.1 p.2 < ε.val}) :=
 begin
-  ext s,
-  haveI : nonempty {ε : ℝ // ε > 0} := ⟨⟨1, zero_lt_one⟩⟩,
-  rw mem_infi,
+  ext s, rw mem_infi,
   { simp [completion.mem_uniformity_dist, subset_def] },
   { rintro ⟨r, hr⟩ ⟨p, hp⟩, use ⟨min r p, lt_min hr hp⟩,
     simp [lt_min_iff, (≥)] {contextual := tt} }

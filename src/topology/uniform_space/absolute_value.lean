@@ -67,7 +67,6 @@ begin
   suffices : s ∈ (⨅ ε: {ε : 𝕜 // ε > 0}, 𝓟 {p:R×R | abv (p.2 - p.1) < ε.val}) ↔ _,
   { rw infi_subtype at this,
     exact this },
-  haveI : nonempty {ε : 𝕜 // ε > 0} := ⟨⟨1, zero_lt_one⟩⟩,
   rw mem_infi,
   { simp [subset_def] },
   { exact assume ⟨r, hr⟩ ⟨p, hp⟩, ⟨⟨min r p, lt_min hr hp⟩, by simp [lt_min_iff, (≥)] {contextual := tt}⟩, },
