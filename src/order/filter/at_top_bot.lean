@@ -34,16 +34,6 @@ def at_top [preorder α] : filter α := ⨅ a, 𝓟 {b | a ≤ b}
   and indeed is trivial when a bottom element exists.) -/
 def at_bot [preorder α] : filter α := ⨅ a, 𝓟 {b | b ≤ a}
 
-lemma at_top_basis [nonempty α] [semilattice_sup α] :
-  (@at_top α _).has_basis (λ _, true) Ici :=
-has_basis_infi_principal $ directed_of_sup $ λ i j, Ici_subset_Ici.2
-
-lemma at_top_basis' [semilattice_sup α] (a : α) :
-  (@at_top α _).has_basis (λ x, a ≤ x) Ici :=
-⟨λ t, (@at_top_basis α ⟨a⟩ _).mem_iff.trans
-  ⟨λ ⟨x, _, hx⟩, ⟨x ⊔ a, le_sup_right, λ y hy, hx (le_trans le_sup_left hy)⟩,
-    λ ⟨x, _, hx⟩, ⟨x, trivial, hx⟩⟩⟩
-
 lemma has_countable_basis_at_top [nonempty α] [semilattice_sup α] [encodable α] :
   has_countable_basis (at_top : filter α) (λ _, true) Ici :=
 { countable := countable_encodable _,
@@ -65,6 +55,16 @@ mem_infi_sets a $ subset.refl _
 lemma Iio_mem_at_bot [preorder α] [no_bot_order α] (x : α) : Iio x ∈ (at_bot : filter α) :=
 let ⟨z, hz⟩ := no_bot x in mem_sets_of_superset (mem_at_bot z) $ λ y h, lt_of_le_of_lt h hz
 
+lemma at_top_basis [nonempty α] [semilattice_sup α] :
+  (@at_top α _).has_basis (λ _, true) Ici :=
+has_basis_infi_principal $ directed_of_sup $ λ i j, Ici_subset_Ici.2
+
+lemma at_top_basis' [semilattice_sup α] (a : α) :
+  (@at_top α _).has_basis (λ x, a ≤ x) Ici :=
+⟨λ t, (@at_top_basis α ⟨a⟩ _).mem_iff.trans
+  ⟨λ ⟨x, _, hx⟩, ⟨x ⊔ a, le_sup_right, λ y hy, hx (le_trans le_sup_left hy)⟩,
+    λ ⟨x, _, hx⟩, ⟨x, trivial, hx⟩⟩⟩
+
 @[instance]
 lemma at_top_ne_bot [nonempty α] [semilattice_sup α] : ne_bot (at_top : filter α) :=
 at_top_basis.ne_bot_iff.2 $ λ a _, nonempty_Ici
@@ -72,7 +72,7 @@ at_top_basis.ne_bot_iff.2 $ λ a _, nonempty_Ici
 @[simp, nolint ge_or_gt]
 lemma mem_at_top_sets [nonempty α] [semilattice_sup α] {s : set α} :
   s ∈ (at_top : filter α) ↔ ∃a:α, ∀b≥a, b ∈ s :=
-at_top_basis.mem_iff.trans $ by simp [subset_def]
+at_top_basis.mem_iff.trans $ exists_congr $ λ _, exists_const _
 
 @[simp, nolint ge_or_gt]
 lemma eventually_at_top [semilattice_sup α] [nonempty α] {p : α → Prop} :
@@ -80,6 +80,11 @@ lemma eventually_at_top [semilattice_sup α] [nonempty α] {p : α → Prop} :
 mem_at_top_sets
 
 lemma eventually_ge_at_top [preorder α] (a : α) : ∀ᶠ x in at_top, a ≤ x := mem_at_top a
+
+lemma at_top_countable_basis [nonempty α] [semilattice_sup α] [encodable α] :
+  has_countable_basis (at_top : filter α) (λ _, true) Ici :=
+{ countable := countable_encodable _,
+  .. at_top_basis }
 
 lemma order_top.at_top_eq (α) [order_top α] : (at_top : filter α) = pure ⊤ :=
 le_antisymm (le_pure_iff.2 $ (eventually_ge_at_top ⊤).mono $ λ b, top_unique)
@@ -119,7 +124,7 @@ frequently_at_top.mp h
 
 lemma map_at_top_eq [nonempty α] [semilattice_sup α] {f : α → β} :
   at_top.map f = (⨅a, 𝓟 $ f '' {a' | a ≤ a'}) :=
-(at_top_basis.map f).eq_infi
+(at_top_basis.map _).eq_infi
 
 lemma tendsto_at_top [preorder β] (m : α → β) (f : filter α) :
   tendsto m f at_top ↔ (∀b, ∀ᶠ a in f, b ≤ m a) :=
