@@ -31,9 +31,6 @@ protected theorem forall' {q : ∀x, p x → Prop} :
   (∃ x, q x) ↔ (∃ a b, q ⟨a, b⟩) :=
 ⟨assume ⟨⟨a, b⟩, h⟩, ⟨a, b, h⟩, assume ⟨a, b, h⟩, ⟨⟨a, b⟩, h⟩⟩
 
--- lemma ext {f g : equiv α β} (H : ∀ x, f x = g x) : f = g :=
--- coe_fn_injective (funext H)
-
 @[ext] protected lemma ext : ∀ {a1 a2 : {x // p x}}, (a1 : α) = (a2 : α) → a1 = a2
 | ⟨x, h1⟩ ⟨.(x), h2⟩ rfl := rfl
 

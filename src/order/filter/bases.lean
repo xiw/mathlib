@@ -548,7 +548,7 @@ begin
   rw infi_subtype',
   use (λ n, g n), apply le_antisymm; rw le_infi_iff,
   { intro i, apply infi_le_of_le (g i) _, apply le_refl _ },
-  { intros a, rcases gsurj a with i, subst h, apply infi_le }
+  { intros a, rcases gsurj a with ⟨i, rfl⟩, apply infi_le }
 end
 
 lemma countable_binfi_eq_infi_seq' [complete_lattice α] {B : set ι} (Bcbl : countable B) (f : ι → α)
