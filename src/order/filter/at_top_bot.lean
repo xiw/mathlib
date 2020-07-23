@@ -34,15 +34,6 @@ def at_top [preorder α] : filter α := ⨅ a, 𝓟 {b | a ≤ b}
   and indeed is trivial when a bottom element exists.) -/
 def at_bot [preorder α] : filter α := ⨅ a, 𝓟 {b | b ≤ a}
 
-lemma has_countable_basis_at_top [nonempty α] [semilattice_sup α] [encodable α] :
-  has_countable_basis (at_top : filter α) (λ _, true) Ici :=
-{ countable := countable_encodable _,
-  .. at_top_basis }
-
-lemma is_countably_generated_at_top [nonempty α] [semilattice_sup α] [encodable α] :
-  (at_top : filter $ α).is_countably_generated :=
-has_countable_basis_at_top.is_countably_generated
-
 lemma mem_at_top [preorder α] (a : α) : {b : α | a ≤ b} ∈ @at_top α _ :=
 mem_infi_sets a $ subset.refl _
 
@@ -64,6 +55,15 @@ lemma at_top_basis' [semilattice_sup α] (a : α) :
 ⟨λ t, (@at_top_basis α ⟨a⟩ _).mem_iff.trans
   ⟨λ ⟨x, _, hx⟩, ⟨x ⊔ a, le_sup_right, λ y hy, hx (le_trans le_sup_left hy)⟩,
     λ ⟨x, _, hx⟩, ⟨x, trivial, hx⟩⟩⟩
+
+lemma has_countable_basis_at_top [nonempty α] [semilattice_sup α] [encodable α] :
+  has_countable_basis (at_top : filter α) (λ _, true) Ici :=
+{ countable := countable_encodable _,
+  .. at_top_basis }
+
+lemma is_countably_generated_at_top [nonempty α] [semilattice_sup α] [encodable α] :
+  (at_top : filter $ α).is_countably_generated :=
+has_countable_basis_at_top.is_countably_generated
 
 @[instance]
 lemma at_top_ne_bot [nonempty α] [semilattice_sup α] : ne_bot (at_top : filter α) :=
