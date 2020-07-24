@@ -300,14 +300,19 @@ begin
   apply frobenius_inj (polynomial (zmod p)) p, repeat {rw frobenius_def},
   rw ← zmod.expand_p,
   unfold char_poly, rw alg_hom_det, rw ← det_pow, -- simp,
-  congr,
-  rw ← mat_poly_equiv.symm_apply_apply (char_matrix M ^ p),
+  apply congr_arg det,
+  apply mat_poly_equiv.injective,
   rw ← mat_poly_equiv.coe_alg_hom,
   rw alg_hom.map_pow,
   rw mat_poly_equiv.coe_alg_hom,
   rw mat_poly_equiv_char_matrix,
-  rw @sub_pow_char_of_commute _ _ _ _ _ _ _ _,
-  { apply_instance, },
+  rw sub_pow_char_of_commute _,
+  { ext, unfold char_matrix, by_cases i = j; simp [h]; by_cases n_1 = p; simp [h];
+    by_cases n_1 = 0; simp [coeff_C],
+  },
+  sorry, apply_instance, sorry,
+
+
   --unfold char_matrix,
   --transitivity ((scalar n) X - C.map_matrix M) ^ p, simp,
   --rw sub_pow_char_of_commute,
