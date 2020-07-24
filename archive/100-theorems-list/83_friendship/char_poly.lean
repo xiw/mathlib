@@ -289,23 +289,30 @@ begin
   -- Something is not right. :-)
 end
 
-lemma char_poly_pow_p_char_p (M : matrix n n (zmod p)) :
+lemma char_poly_pow_p_char_p [inhabited n] (M : matrix n n (zmod p)) :
 char_poly (M ^ p) = char_poly M :=
 begin
   -- classical,
-  by_cases hn : nonempty n, letI := hn, haveI : inhabited n := by { inhabit n, assumption },
-  clear _inst hn,
-  swap, { congr, rw empty_matrix_eq_zero hn M, apply empty_matrix_eq_zero hn },
+  --by_cases hn : nonempty n, letI := hn, haveI : inhabited n := by { inhabit n, assumption },
+  --clear _inst hn,
+  --swap, { congr, rw empty_matrix_eq_zero hn M, apply empty_matrix_eq_zero hn },
 
   apply frobenius_inj (polynomial (zmod p)) p, repeat {rw frobenius_def},
   rw ← zmod.expand_p,
-  unfold char_poly, rw alg_hom_det, rw ← det_pow, simp,
+  unfold char_poly, rw alg_hom_det, rw ← det_pow, -- simp,
   congr,
-  unfold char_matrix,
-  transitivity ((scalar n) X - C.map_matrix M) ^ p, simp,
-  rw sub_pow_char_of_commute,
-  swap, { apply matrix.scalar.commute }, swap, { refl, },
-  apply foo,
+  rw ← mat_poly_equiv.symm_apply_apply (char_matrix M ^ p),
+  rw ← mat_poly_equiv.coe_alg_hom,
+  rw alg_hom.map_pow,
+  rw mat_poly_equiv.coe_alg_hom,
+  rw mat_poly_equiv_char_matrix,
+  rw @sub_pow_char_of_commute _ _ _ _ _ _ _ _,
+  { apply_instance, },
+  --unfold char_matrix,
+  --transitivity ((scalar n) X - C.map_matrix M) ^ p, simp,
+  --rw sub_pow_char_of_commute,
+  --swap, { apply matrix.scalar.commute }, swap, { refl, },
+  --apply foo,
   -- unfold expand, dsimp, simp,
   -- convert sub_pow_char_of_commute _,
   -- rw sub_pow_char_of_commute,

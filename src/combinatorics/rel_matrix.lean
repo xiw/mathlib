@@ -109,23 +109,23 @@ lemma adjacency_matrix_apply (v w : α) : G.adjacency_matrix R v w = ite (G.adj 
 
 @[simp]
 lemma adjacency_matrix_dot_product (v : α) (vec : α → R) :
-  dot_product (G.adjacency_matrix R v) vec = ∑ u : neighbors G v, vec u :=
---rel_matrix_dot_product v vec
-by { rw ← rel_matrix_dot_product v vec, }
+  dot_product (G.adjacency_matrix R v) vec = ∑ u in neighbors G v, vec u :=
+by { rw neighbors_eq_filter, apply rel_matrix_dot_product, }
 
 @[simp]
 lemma dot_product_adjacency_matrix (v : α) (vec : α → R) :
-  dot_product vec (G.adjacency_matrix R v) = ∑ u : neighbors G v, vec u :=
-dot_product_rel_matrix v vec
+  dot_product vec (G.adjacency_matrix R v) = ∑ u in neighbors G v, vec u :=
+by { rw neighbors_eq_filter, apply dot_product_rel_matrix, }
 
 @[simp]
 lemma adjacency_matrix_mul_apply (M : matrix α α R) (v w : α) :
-  (G.adjacency_matrix R * M) v w = ∑ u : neighbors G v, M u w := rel_matrix_mul_apply M v w
+  (G.adjacency_matrix R * M) v w = ∑ u in neighbors G v, M u w :=
+by { rw neighbors_eq_filter, apply rel_matrix_mul_apply }
 
 @[simp]
 lemma mul_adjacency_matrix_apply (M : matrix α α R) (v w : α) :
-  (M * G.adjacency_matrix R) v w = ∑ u : neighbors G w, M v u :=
-by { unfold neighbors, rw ← G.sym.eq_inv, apply mul_rel_matrix_apply, }
+  (M * G.adjacency_matrix R) v w = ∑ u in neighbors G w, M v u :=
+by { rw neighbors_eq_filter, rw ← G.sym.eq_inv, apply mul_rel_matrix_apply, }
 
 variable (R)
 theorem adj_mat_traceless : matrix.trace α R R (G.adjacency_matrix R) = 0 := by simp
@@ -142,5 +142,14 @@ lemma adj_mat_mul_const_vec_of_regular {d : ℕ} {r : R} (hd : regular_graph G d
 by { ext, rw [← hd x, matrix.mul_vec, adjacency_matrix_dot_product]; simp [degree] }
 
 end adjacency_matrix
+
+section incidence_matrix
+
+variables (G : simple_graph α) (R)
+
+def incidence_matrix : matrix α G.E R := rel_matrix (∈) R
+
+
+end incidence_matrix
 
 end simple_graph

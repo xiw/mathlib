@@ -67,16 +67,16 @@ theorem friendship_adj_sq_apply_of_ne
 begin
   rw [pow_two, ← nat.cast_one, ← card_friends hG hvw,
     friends_eq_inter_neighbors hG],
-  simp [neighbors, finset.filter_filter, finset.filter_inter],
+  simp [finset.filter_filter, finset.filter_inter],
 end
 
 lemma friendship_adj_cube_apply_of_not_adj {v w : V} (non_adj : ¬ G.adj v w) :
   ((G.adjacency_matrix R) ^ 3) v w = degree G v :=
 begin
-  rw [pow_succ, adjacency_matrix_mul_apply], rw degree, rw card_eq_sum_ones, rw sum_nat_cast,
+  rw [pow_succ, adjacency_matrix_mul_apply], unfold degree, rw card_eq_sum_ones, rw sum_nat_cast,
   apply sum_congr rfl,
   intros x hx, rw friendship_adj_sq_apply_of_ne, rw nat.cast_one, apply hG,
-  intro contra, rw contra at hx, apply non_adj, rw neighbor_iff_adjacent at hx, apply hx,
+  intro contra, rw contra at hx, apply non_adj, rw mem_neighbors_iff_adj at hx, apply hx,
 end
 
 variable {R}
@@ -241,8 +241,7 @@ begin
   apply finset.eq_of_subset_of_card_le,
   { rw finset.subset_iff,
     intro x,
-    rw neighbor_iff_adjacent,
-    rw finset.mem_erase,
+    rw [mem_neighbors_iff_adj, finset.mem_erase],
     intro h,
     split, { symmetry, exact G.ne_of_edge h },
     apply finset.mem_univ },
@@ -251,7 +250,7 @@ begin
     unfold regular_graph at hd, unfold degree at hd,
     rw hd },
 
-  rw [← neighbor_iff_adjacent, h', finset.mem_erase],
+  rw [← mem_neighbors_iff_adj, h', finset.mem_erase],
   split, { symmetry, exact hvw },
   apply finset.mem_univ
 end
