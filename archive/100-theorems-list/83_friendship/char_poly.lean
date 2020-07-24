@@ -289,6 +289,12 @@ begin
   -- Something is not right. :-)
 end
 
+lemma polynomial.commute_X {S : Type*} [semiring S] (p : polynomial S) :
+  commute X p :=
+begin
+  rw commute, rw semiconj_by, rw X_mul,
+end
+
 lemma char_poly_pow_p_char_p [inhabited n] (M : matrix n n (zmod p)) :
 char_poly (M ^ p) = char_poly M :=
 begin
@@ -301,33 +307,16 @@ begin
   rw ← zmod.expand_p,
   unfold char_poly, rw alg_hom_det, rw ← det_pow, -- simp,
   apply congr_arg det,
-  apply mat_poly_equiv.injective,
-  rw ← mat_poly_equiv.coe_alg_hom,
-  rw alg_hom.map_pow,
-  rw mat_poly_equiv.coe_alg_hom,
-  rw mat_poly_equiv_char_matrix,
-  rw sub_pow_char_of_commute _,
-  { ext, unfold char_matrix, by_cases i = j; simp [h]; by_cases n_1 = p; simp [h];
-    by_cases n_1 = 0; simp [coeff_C],
-  },
-  sorry, apply_instance, sorry,
+  apply mat_poly_equiv.injective, swap, { apply_instance },
+  rw [← mat_poly_equiv.coe_alg_hom, alg_hom.map_pow, mat_poly_equiv.coe_alg_hom,
+        mat_poly_equiv_char_matrix, sub_pow_char_of_commute _, ← C_pow],
+  swap, { apply polynomial.commute_X },
+  any_goals { apply_instance },
+  -- the following is a nasty case bash that should be abstracted as a lemma
+  -- (and maybe it can be proven more... algebraically?)
+  ext, rw [coeff_sub, coeff_C],
+  by_cases hij : i = j; simp [char_matrix, hij]; simp only [coeff_C]; split_ifs; simp *,
 
-
-  --unfold char_matrix,
-  --transitivity ((scalar n) X - C.map_matrix M) ^ p, simp,
-  --rw sub_pow_char_of_commute,
-  --swap, { apply matrix.scalar.commute }, swap, { refl, },
-  --apply foo,
-  -- unfold expand, dsimp, simp,
-  -- convert sub_pow_char_of_commute _,
-  -- rw sub_pow_char_of_commute,
-  -- rw ← map_pow,
-  -- rw ← C.map_matrix.map_pow, rw ← (scalar n).map_pow,
-  -- ext, refine congr (congr rfl _) rfl, by_cases i = j; simp [h], sorry,
-  -- {
-  --   refine congr rfl _, refine congr (congr _ rfl) rfl,
-  --   refine congr (congr _ rfl) rfl, sorry,
-  -- }
 end
 
 end char_p
