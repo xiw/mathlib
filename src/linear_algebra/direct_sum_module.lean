@@ -5,7 +5,7 @@ Authors: Kenny Lau
 
 Direct sum of modules over commutative rings, indexed by a discrete type.
 -/
-import algebra.direct_sum
+import algebra.direct_sum_monoid
 import linear_algebra.basic
 
 /-!
@@ -28,7 +28,7 @@ universes u v w u₁
 
 variables (R : Type u) [semiring R]
 variables (ι : Type v) [decidable_eq ι] (M : ι → Type w)
-variables [Π i, add_comm_group (M i)] [Π i, semimodule R (M i)]
+variables [Π i, add_comm_monoid (M i)] [Π i, semimodule R (M i)]
 include R
 
 namespace direct_sum
@@ -59,32 +59,32 @@ theorem mk_smul (s : finset ι) (c : R) (x) : mk M s (c • x) = c • mk M s x 
 theorem of_smul (i : ι) (c : R) (x) : of M i (c • x) = c • of M i x :=
 (lof R ι M i).map_smul c x
 
-variables {N : Type u₁} [add_comm_group N] [semimodule R N]
+variables {N : Type u₁} [add_comm_monoid N] [semimodule R N]
 variables (φ : Π i, M i →ₗ[R] N)
 
 variables (ι N φ)
 /-- The linear map constructed using the universal property of the coproduct. -/
 def to_module : (⨁ i, M i) →ₗ[R] N :=
-{ to_fun := to_group (λ i, φ i),
-  map_add' := to_group_add _,
+{ to_fun := to_add_monoid (λ i, φ i),
+  map_add' := to_add_monoid_add _,
   map_smul' := λ c x, direct_sum.induction_on x
-    (by rw [smul_zero, to_group_zero, smul_zero])
-    (λ i x, by rw [← of_smul, to_group_of, to_group_of, (φ i).map_smul c x])
-    (λ x y ihx ihy, by rw [smul_add, to_group_add, ihx, ihy, to_group_add, smul_add]) }
+    (by rw [smul_zero, to_add_monoid_zero, smul_zero])
+    (λ i x, by rw [← of_smul, to_add_monoid_of, to_add_monoid_of, (φ i).map_smul c x])
+    (λ x y ihx ihy, by rw [smul_add, to_add_monoid_add, ihx, ihy, to_add_monoid_add, smul_add]) }
 
 variables {ι N φ}
 
 /-- The map constructed using the universal property gives back the original maps when
 restricted to each component. -/
 @[simp] lemma to_module_lof (i) (x : M i) : to_module R ι N φ (lof R ι M i x) = φ i x :=
-to_group_of (λ i, φ i) i x
+to_add_monoid_of (λ i, φ i) i x
 
 variables (ψ : (⨁ i, M i) →ₗ[R] N)
 
 /-- Every linear map from a direct sum agrees with the one obtained by applying
 the universal property to each of its components. -/
 theorem to_module.unique (f : ⨁ i, M i) : ψ f = to_module R ι N (λ i, ψ.comp $ lof R ι M i) f :=
-to_group.unique ψ f
+to_add_monoid.unique ψ f
 
 variables {ψ} {ψ' : (⨁ i, M i) →ₗ[R] N}
 

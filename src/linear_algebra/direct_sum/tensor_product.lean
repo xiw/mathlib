@@ -5,7 +5,6 @@ Authors: Kenny Lau, Mario Carneiro
 -/
 import linear_algebra.tensor_product
 import linear_algebra.direct_sum_module
-
 section ring
 
 namespace tensor_product
@@ -18,8 +17,8 @@ variables (R : Type*) [comm_ring R]
 variables (ι₁ : Type*) (ι₂ : Type*)
 variables [decidable_eq ι₁] [decidable_eq ι₂]
 variables (M₁ : ι₁ → Type*) (M₂ : ι₂ → Type*)
-variables [Π i₁, add_comm_group (M₁ i₁)] [Π i₂, add_comm_group (M₂ i₂)]
-variables [Π i₁, module R (M₁ i₁)] [Π i₂, module R (M₂ i₂)]
+variables [Π i₁, add_comm_monoid (M₁ i₁)] [Π i₂, add_comm_monoid (M₂ i₂)]
+variables [Π i₁, semimodule R (M₁ i₁)] [Π i₂, semimodule R (M₂ i₂)]
 
 /-- The linear equivalence `(⨁ i₁, M₁ i₁) ⊗ (⨁ i₂, M₂ i₂) ≃ (⨁ i₁, ⨁ i₂, M₁ i₁ ⊗ M₂ i₂)`, i.e.
 "tensor product distributes over direct sum". -/
