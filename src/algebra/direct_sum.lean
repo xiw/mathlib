@@ -31,7 +31,7 @@ namespace direct_sum
 variables {ι : Type v} [decidable_eq ι]
 variables {β : ι → Type w} [Π i, add_comm_group (β i)]
 
-instance : add_comm_group (⨁ i, β i) :=
+instance add_comm_group : add_comm_group (⨁ i, β i) :=
 dfinsupp.add_comm_group
 
 instance mk.is_add_group_hom (s : finset ι) : is_add_group_hom (mk β s) :=
