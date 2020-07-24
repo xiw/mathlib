@@ -190,10 +190,9 @@ by rw [coeff_zero_eq_eval_zero, char_poly, eval_det, mat_poly_equiv_char_matrix,
 section char_p
 
 lemma matrix.scalar_inj [inhabited n] {r s : R} : scalar n r = scalar n s ↔ r = s :=
-begin
-  split; intro h, rw [← scalar_apply_eq r (arbitrary n), ← scalar_apply_eq s (arbitrary n), h],
-  rw h,
-end
+{ mp := λ h, by rw [← scalar_apply_eq r (arbitrary n), ← scalar_apply_eq s (arbitrary n), h],
+  mpr := by rintro rfl; refl }
+
 
 instance matrix.char_p [inhabited n] (p : ℕ) [char_p R p] : char_p (matrix n n R) p :=
 { cast_eq_zero_iff :=
@@ -204,11 +203,8 @@ instance matrix.char_p [inhabited n] (p : ℕ) [char_p R p] : char_p (matrix n n
   end }
 
 lemma det_pow (k : ℕ) (M : matrix n n R) :
-(M ^ k).det = (M.det) ^ k :=
-begin
-  induction k with k hk, { simp },
-  simp [pow_succ, ← hk],
-end
+  (M ^ k).det = (M.det) ^ k := by induction k; simp [pow_succ, *]
+
 
 
 --lemma comp_det (p : polynomial R) (M : matrix n n (polynomial R)) :
@@ -233,13 +229,10 @@ begin
   rw [mul_pow, ← C.map_pow, frobenius_fixed p a], ring_exp,
 end
 
-
+-- this could come frmo a subsingleton instance?
 @[simp]
 lemma empty_matrix_eq_zero {R : Type*} [ring R] (hn : ¬ nonempty n) (M : matrix n n R) :
-M = 0 :=
-begin
-  ext, contrapose! hn, use i,
-end
+M = 0 := by { ext, contrapose! hn, use i }
 
 theorem sub_pow_char_of_commute (R : Type u_1) [ring R] {p : ℕ} [fact p.prime]
   [char_p R p] (x y : R) (h : commute x y):
@@ -249,74 +242,38 @@ begin
   unfold commute, unfold semiconj_by, rw [sub_mul, mul_sub, h.eq],
 end
 
-@[simp] lemma matrix.pow_eq_pow [semiring α] (M : matrix n n α) (k : ℕ) :
-  M ^ k = monoid.pow M k :=
-begin
-  induction k with d hd, refl,
-  rw [pow_succ, hd, mul_eq_mul], refl,
-end
-
 -- This is missing from matrix/basic (generalise to rectangular)
 lemma matrix.map_sub [add_group α] {β : Type*} [add_group β] (f : α →+ β)
   (M N : matrix n n α) : (M - N).map f = M.map f - N.map f :=
-by { ext, simp, }
+by { ext, simp }
 
-#check @eval₂_C
--- X • 1
-lemma foo {n : Type u_2} (p : ℕ)
-  [fintype n]
-  [decidable_eq n]
-  [fact (nat.prime p)]
-  (M : matrix n n (zmod p)) :
-  ((X : polynomial (zmod p)) • 1 - (M ^ p).map C).map (expand (zmod p) p) =
-    ((X : polynomial (zmod p)) • 1) ^ p - M.map C ^ p :=
-begin
-  -- rw smul_
-  -- Maybe a simpler failure, I can't get lemmas about eval₂ to fire.
-  simp, rw expand, dsimp, rw eval₂_X_pow,
-  -- rw eval₂_sub, rw coeff_sub,
-  -- rw eval₂_C,
-  -- No matter what I try here, I can't rewrite or simp by `matrix.map_sub`
-  -- change matrix.map _ (expand (zmod p) p).to_ring_hom.to_add_monoid_hom = _,
-  -- dsimp,
-  -- simp,
-  -- rw matrix.map_sub,
-  -- simp [matrix.map_sub],
-
-  -- Even `convert` times out...
-  -- convert matrix.map_sub (expand (zmod p) p).to_ring_hom.to_add_monoid_hom,
-
-  -- Something is not right. :-)
-end
-
+-- this should go in algebra somewhere I think?
 lemma polynomial.commute_X {S : Type*} [semiring S] (p : polynomial S) :
-  commute X p :=
-begin
-  rw commute, rw semiconj_by, rw X_mul,
-end
+  commute X p := by rw [commute, semiconj_by, X_mul]
 
-lemma char_poly_pow_p_char_p [inhabited n] (M : matrix n n (zmod p)) :
+lemma char_poly_pow_p_char_p_of_inhabited [inhabited n] (M : matrix n n (zmod p)) :
 char_poly (M ^ p) = char_poly M :=
 begin
-  -- classical,
-  --by_cases hn : nonempty n, letI := hn, haveI : inhabited n := by { inhabit n, assumption },
-  --clear _inst hn,
-  --swap, { congr, rw empty_matrix_eq_zero hn M, apply empty_matrix_eq_zero hn },
-
   apply frobenius_inj (polynomial (zmod p)) p, repeat {rw frobenius_def},
   rw ← zmod.expand_p,
   unfold char_poly, rw alg_hom_det, rw ← det_pow, -- simp,
   apply congr_arg det,
   apply mat_poly_equiv.injective, swap, { apply_instance },
   rw [← mat_poly_equiv.coe_alg_hom, alg_hom.map_pow, mat_poly_equiv.coe_alg_hom,
-        mat_poly_equiv_char_matrix, sub_pow_char_of_commute _, ← C_pow],
+        mat_poly_equiv_char_matrix, sub_pow_char_of_commute, ← C_pow],
   swap, { apply polynomial.commute_X },
-  any_goals { apply_instance },
   -- the following is a nasty case bash that should be abstracted as a lemma
   -- (and maybe it can be proven more... algebraically?)
   ext, rw [coeff_sub, coeff_C],
   by_cases hij : i = j; simp [char_matrix, hij]; simp only [coeff_C]; split_ifs; simp *,
+end
 
+lemma char_poly_pow_p_char_p (M : matrix n n (zmod p)) :
+char_poly (M ^ p) = char_poly M :=
+begin
+  classical,
+  by_cases hn : nonempty n, letI := hn, inhabit n, apply char_poly_pow_p_char_p_of_inhabited,
+  swap, { congr, rw empty_matrix_eq_zero hn M, apply empty_matrix_eq_zero hn },
 end
 
 end char_p
