@@ -11,7 +11,6 @@ import data.zmod.basic
 import number_theory.quadratic_reciprocity
 import algebra.polynomial.big_operators
 import field_theory.separable
-import .sym_matrix -- this is where i put smul_pow
 
 noncomputable theory
 
@@ -26,6 +25,18 @@ variables {α : Type u_2} [decidable_eq α]
 
 open finset
 open polynomial
+
+section ugh
+
+variables {A : Type u} [semiring A] [comm_semiring R] [algebra R A]
+
+@[simp] lemma smul_pow (a : A) (r : R) (k : ℕ) : (r • a)^k = r^k • a^k :=
+begin
+  induction k with d hd, simp,
+  rw [pow_succ, hd], rw algebra.smul_mul_assoc, simp, rw smul_smul, ring,
+end
+
+end ugh
 
 section fixed_points
 
@@ -229,7 +240,7 @@ begin
   rw [mul_pow, ← C.map_pow, frobenius_fixed p a], ring_exp,
 end
 
--- this could come frmo a subsingleton instance?
+-- this could come from a subsingleton instance?
 @[simp]
 lemma empty_matrix_eq_zero {R : Type*} [ring R] (hn : ¬ nonempty n) (M : matrix n n R) :
 M = 0 := by { ext, contrapose! hn, use i }
@@ -251,7 +262,7 @@ by { ext, simp }
 lemma polynomial.commute_X {S : Type*} [semiring S] (p : polynomial S) :
   commute X p := by rw [commute, semiconj_by, X_mul]
 
-lemma char_poly_pow_p_char_p_of_inhabited [inhabited n] (M : matrix n n (zmod p)) :
+lemma char_poly_pow_p_zmod_p_of_inhabited [inhabited n] (M : matrix n n (zmod p)) :
 char_poly (M ^ p) = char_poly M :=
 begin
   apply frobenius_inj (polynomial (zmod p)) p, repeat {rw frobenius_def},
@@ -268,11 +279,11 @@ begin
   by_cases hij : i = j; simp [char_matrix, hij]; simp only [coeff_C]; split_ifs; simp *,
 end
 
-lemma char_poly_pow_p_char_p (M : matrix n n (zmod p)) :
+lemma char_poly_pow_p_zmod_p (M : matrix n n (zmod p)) :
 char_poly (M ^ p) = char_poly M :=
 begin
   classical,
-  by_cases hn : nonempty n, letI := hn, inhabit n, apply char_poly_pow_p_char_p_of_inhabited,
+  by_cases hn : nonempty n, letI := hn, inhabit n, apply char_poly_pow_p_zmod_p_of_inhabited,
   swap, { congr, rw empty_matrix_eq_zero hn M, apply empty_matrix_eq_zero hn },
 end
 
