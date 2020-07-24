@@ -6,6 +6,7 @@ Authors: Kenny Lau
 Direct sum of modules over commutative rings, indexed by a discrete type.
 -/
 import algebra.direct_sum_monoid
+import algebra.direct_sum
 import linear_algebra.basic
 
 /-!
