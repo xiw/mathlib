@@ -1035,12 +1035,20 @@ lemma eventually_eq.rw {l : filter α} {f g : α → β} (h : f =ᶠ[l] g) (p : 
   ∀ᶠ x in l, p x (g x) :=
 hf.congr $ h.mono $ λ x hx, hx ▸ iff.rfl
 
+lemma eventually_set_ext {s t : set α} {l : filter α} :
+   s =ᶠ[l] t ↔ ∀ᶠ x in l, x ∈ s ↔ x ∈ t :=
+eventually_congr $ eventually_of_forall $ λ x, ⟨eq.to_iff, iff.to_eq⟩
+
+lemma eventually_eq.mem_iff {s t : set α} {l : filter α} (h : s =ᶠ[l] t) :
+  ∀ᶠ x in l, x ∈ s ↔ x ∈ t :=
+eventually_set_ext.1 h
+
 lemma eventually_eq.exists_mem {l : filter α} {f g : α → β} (h : f =ᶠ[l] g) :
   ∃ s ∈ l, ∀ x ∈ s, f x = g x :=
 filter.eventually.exists_mem h
 
 lemma eventually_eq_of_mem {l : filter α} {f g : α → β} {s : set α}
-  (hs : s ∈ l) (h : ∀ x ∈ s, f x = g x) : f =ᶠ[l] g :=
+  (hs : s ∈ l) (h : eq_on f g s) : f =ᶠ[l] g :=
 eventually_of_mem hs h
 
 lemma eventually_eq_iff_exists_mem {l : filter α} {f g : α → β} :
@@ -1093,6 +1101,10 @@ lemma eventually_eq.sub [add_group β] {f f' g g' : α → β} {l : filter α} (
   (h' : f' =ᶠ[l] g') :
   ((λ x, f x - f' x) =ᶠ[l] (λ x, g x - g' x)) :=
 h.add h'.neg
+
+lemma eventually_eq_inf_principal_iff {F : filter α} {s : set α} {f g : α → β} :
+  (f =ᶠ[F ⊓ 𝓟 s] g) ↔ ∀ᶠ x in F, x ∈ s → f x = g x :=
+eventually_inf_principal
 
 section has_le
 
@@ -1968,6 +1980,14 @@ by simp only [tendsto, iff_self, le_infi_iff]
 lemma tendsto_infi' {f : α → β} {x : ι → filter α} {y : filter β} (i : ι) :
   tendsto f (x i) y → tendsto f (⨅i, x i) y :=
 tendsto_le_left (infi_le _ _)
+
+lemma tendsto_sup {f : α → β} {x₁ x₂ : filter α} {y : filter β} :
+  tendsto f (x₁ ⊔ x₂) y ↔ tendsto f x₁ y ∧ tendsto f x₂ y :=
+by simp only [tendsto, map_sup, sup_le_iff]
+
+lemma tendsto.sup {f : α → β} {x₁ x₂ : filter α} {y : filter β} :
+  tendsto f x₁ y → tendsto f x₂ y → tendsto f (x₁ ⊔ x₂) y :=
+λ h₁ h₂, tendsto_sup.mpr ⟨ h₁, h₂ ⟩
 
 lemma tendsto_principal {f : α → β} {l : filter α} {s : set β} :
   tendsto f l (𝓟 s) ↔ ∀ᶠ a in l, f a ∈ s :=
