@@ -138,12 +138,6 @@ lemma tendsto_at_top_mono [preorder β] {l : filter α} {f g : α → β} (h : �
   tendsto f l at_top → tendsto g l at_top :=
 tendsto_at_top_mono' l $ eventually_of_forall h
 
-lemma has_antimono_basis.tendsto [semilattice_sup ι] [nonempty ι] {l : filter α}
-  {p : ι → Prop} {s : ι → set α} (hl : l.has_antimono_basis p s) {φ : ι → α}
-  (h : ∀ i : ι, φ i ∈ s i) : tendsto φ at_top l  :=
-(at_top_basis.tendsto_iff hl.to_has_basis).2 $ assume i hi,
-  ⟨i, trivial, λ j hij, hl.decreasing hi (hl.mono hij hi) hij (h j)⟩
-
 /-!
 ### Sequences
 -/
@@ -573,6 +567,12 @@ lemma map_at_top_finset_prod_le_of_prod_eq [comm_monoid α] {f : β → α} {g :
 by rw [map_at_top_eq, map_at_top_eq];
 from (le_infi $ assume b, let ⟨v, hv⟩ := h_eq b in infi_le_of_le v $
   by simp [set.image_subset_iff]; exact hv)
+
+lemma has_antimono_basis.tendsto [semilattice_sup ι] [nonempty ι] {l : filter α}
+  {p : ι → Prop} {s : ι → set α} (hl : l.has_antimono_basis p s) {φ : ι → α}
+  (h : ∀ i : ι, φ i ∈ s i) : tendsto φ at_top l  :=
+(at_top_basis.tendsto_iff hl.to_has_basis).2 $ assume i hi,
+  ⟨i, trivial, λ j hij, hl.decreasing hi (hl.mono hij hi) hij (h j)⟩
 
 namespace is_countably_generated
 
