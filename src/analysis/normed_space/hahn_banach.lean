@@ -21,6 +21,31 @@ Prove more corollaries
 
 -/
 
+
+class has_exists_extension_norm_eq (𝕜 : Type*)
+  [nondiscrete_normed_field 𝕜] [normed_algebra ℝ 𝕜] : Prop :=
+(exists_extension_norm_eq : ∀
+  (E : Type*)
+  [normed_group E] [normed_space 𝕜 E]
+  (p : subspace 𝕜 E)
+  (f : p →L[𝕜] 𝕜),
+  ∃ g : E →L[𝕜] 𝕜, (∀ x : p, g x = f x) ∧ ∥g∥ = ∥f∥)
+
+noncomputable def coe_from_ℝ (𝕜 : Type*)
+[nondiscrete_normed_field 𝕜] [normed_algebra ℝ 𝕜] [has_exists_extension_norm_eq 𝕜]
+  (x : ℝ) : 𝕜 :=
+  x • (1 : 𝕜)
+
+lemma norm_norm'
+  (𝕜 : Type*) [nondiscrete_normed_field 𝕜] [normed_algebra ℝ 𝕜] [has_exists_extension_norm_eq 𝕜]
+  (A : Type*) [normed_group A] [normed_space 𝕜 A]
+  (x : A) : ∥(coe_from_ℝ 𝕜 ∥x∥)∥ = ∥x∥ := begin
+  unfold coe_from_ℝ,
+  rw [norm_smul, norm_norm, normed_field.norm_one, mul_one],
+end
+
+
+
 section basic
 variables {E : Type*} [normed_group E] [normed_space ℝ E]
 
@@ -43,6 +68,9 @@ begin
   { simp only [← mul_add],
     exact mul_le_mul_of_nonneg_left (norm_add_le x y) (norm_nonneg f) }
 end
+
+noncomputable instance real_has_exists_extension_norm_eq : has_exists_extension_norm_eq ℝ :=
+⟨by { intros, apply exists_extension_norm_eq }⟩
 
 end basic
 
@@ -94,6 +122,9 @@ begin
 
   { exact f.op_norm_le_bound g.extend_to_ℂ.op_norm_nonneg (λ x, h x ▸ g.extend_to_ℂ.le_op_norm x) },
 end
+
+noncomputable instance complex_has_exists_extension_norm_eq : has_exists_extension_norm_eq ℂ :=
+⟨by { intros, apply complex.exists_extension_norm_eq }⟩
 
 end complex
 
