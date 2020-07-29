@@ -87,8 +87,37 @@ begin
   simpa using norm_le_dual_bound E x,
 end
 
--- TODO: This is also true over ℂ.
-
 end real
+
+namespace complex
+variables (E : Type*) [normed_group E] [normed_space ℂ E]
+
+/-- If one controls the norm of every `f x`, then one controls the norm of `x`.
+    Compare `continuous_linear_map.op_norm_le_bound`. -/
+lemma norm_le_dual_bound (x : E) {M : ℝ} (hMp: 0 ≤ M) (hM : ∀ (f: dual ℂ E), ∥f x∥ ≤ M * ∥f∥) :
+  ∥x∥ ≤ M :=
+begin
+  classical,
+  by_cases h : x = 0,
+  { simp only [h, hMp, norm_zero] },
+  { cases complex.exists_dual_vector x h with f hf,
+    calc ∥x∥ = ∥∥x∥∥ : (norm_norm _).symm
+    ... = ∥(∥x∥ : ℂ)∥ : (complex.norm_real _).symm
+    ... = ∥f x∥ : by rw hf.2 -- sorry-- le_max_left (f x) (-f x) / hf.2.symm
+    ... ≤ M * ∥f∥ : hM f
+    ... = M : by rw [ hf.1, mul_one ] }
+end
+
+/-- The inclusion of a real normed space in its double dual is an isometry onto its image.-/
+lemma inclusion_in_double_dual_isometry (x : E) : ∥inclusion_in_double_dual ℂ E x∥ = ∥x∥ :=
+begin
+  refine le_antisymm_iff.mpr ⟨double_dual_bound ℂ E x, _⟩,
+  rw continuous_linear_map.norm_def,
+  apply real.lb_le_Inf _ continuous_linear_map.bounds_nonempty,
+  rintros c ⟨hc1, hc2⟩,
+  exact norm_le_dual_bound E x hc1 hc2,
+end
+
+end complex
 
 end normed_space
