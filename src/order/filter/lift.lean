@@ -202,6 +202,15 @@ lemma mem_lift' {t : set α} (ht : t ∈ f) : h t ∈ (f.lift' h) :=
 le_principal_iff.mp $ show f.lift' h ≤ 𝓟 (h t),
   from infi_le_of_le t $ infi_le_of_le ht $ le_refl _
 
+lemma has_basis.lift' {ι} {p : ι → Prop} {s} (hf : f.has_basis p s) (hh : monotone h) :
+  (f.lift' h).has_basis p (h ∘ s) :=
+begin
+  refine ⟨λ t, (hf.mem_lift_iff _ (monotone_principal.comp hh)).trans _⟩,
+  show ∀ i, (𝓟 (h (s i))).has_basis (λ j : unit, true) (λ (j : unit), h (s i)),
+    from λ i, has_basis_principal,
+  simp only [exists_const]
+end
+
 lemma mem_lift'_sets (hh : monotone h) {s : set β} : s ∈ (f.lift' h) ↔ (∃t∈f, h t ⊆ s) :=
 mem_lift_sets $ monotone_principal.comp hh
 
@@ -278,17 +287,7 @@ lift_lift_same_eq_lift
 
 lemma lift'_inf_principal_eq {h : set α → set β} {s : set β} :
   f.lift' h ⊓ 𝓟 s = f.lift' (λt, h t ∩ s) :=
-le_antisymm
-  (le_infi $ assume t, le_infi $ assume ht,
-    calc filter.lift' f h ⊓ 𝓟 s ≤ 𝓟 (h t) ⊓ 𝓟 s :
-        inf_le_inf_right _ (infi_le_of_le t $ infi_le _ ht)
-      ... = _ : by simp only [principal_eq_iff_eq, inf_principal, eq_self_iff_true, function.comp_app])
-  (le_inf
-    (le_infi $ assume t, le_infi $ assume ht,
-      infi_le_of_le t $ infi_le_of_le ht $
-      by simp only [le_principal_iff, inter_subset_left, mem_principal_sets, function.comp_app]; exact inter_subset_right _ _)
-    (infi_le_of_le univ $ infi_le_of_le univ_mem_sets $
-    by simp only [le_principal_iff, inter_subset_right, mem_principal_sets, function.comp_app]; exact inter_subset_left _ _))
+by simp only [filter.lift', filter.lift, (∘), ← inf_principal, infi_subtype', ← infi_inf]
 
 lemma lift'_ne_bot_iff (hh : monotone h) : (ne_bot (f.lift' h)) ↔ (∀s∈f, (h s).nonempty) :=
 calc (ne_bot (f.lift' h)) ↔ (∀s∈f, ne_bot (𝓟 (h s))) :
