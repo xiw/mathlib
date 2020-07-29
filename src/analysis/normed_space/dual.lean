@@ -83,8 +83,8 @@ begin
   refine le_antisymm_iff.mpr ⟨double_dual_bound ℝ E x, _⟩,
   rw continuous_linear_map.norm_def,
   apply real.lb_le_Inf _ continuous_linear_map.bounds_nonempty,
-  intros c,
-  simpa using norm_le_dual_bound E x,
+  rintros c ⟨hc1, hc2⟩,
+  exact norm_le_dual_bound E x hc1 hc2,
 end
 
 end real
