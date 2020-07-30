@@ -212,3 +212,23 @@ begin
 end
 
 end complex
+
+namespace generic
+
+variables {𝕜 : Type*} [nondiscrete_normed_field 𝕜] [normed_algebra ℝ 𝕜] [has_exists_extension_norm_eq 𝕜]
+variables {E : Type*} [normed_group E] [normed_space 𝕜 E]
+
+open continuous_linear_equiv
+open_locale classical
+
+lemma coord_self' (x : E) (h : x ≠ 0) : (coe_from_ℝ 𝕜 (∥x∥) • (coord 𝕜 x h))
+  ⟨x, submodule.mem_span_singleton_self x⟩ = coe_from_ℝ 𝕜 (∥x∥) :=
+calc ((coe_from_ℝ 𝕜 (∥x∥)) • (coord 𝕜 x h)) ⟨x, submodule.mem_span_singleton_self x⟩
+    = (coe_from_ℝ 𝕜 (∥x∥)) • (linear_equiv.coord 𝕜 E x h) ⟨x, submodule.mem_span_singleton_self x⟩ : rfl
+... = (coe_from_ℝ 𝕜 (∥x∥)) • 1 : by rw linear_equiv.coord_self 𝕜 E x h
+... = (coe_from_ℝ 𝕜 (∥x∥)) : mul_one _
+
+lemma coord_norm' (x : E) (h : x ≠ 0) : ∥(coe_from_ℝ 𝕜 (∥x∥)) • coord 𝕜 x h∥ = 1 :=
+by rw [norm_smul, norm_norm', coord_norm, mul_inv_cancel (mt norm_eq_zero.mp h)]
+
+end generic
