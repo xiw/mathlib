@@ -231,4 +231,16 @@ calc ((coe_from_ℝ 𝕜 (∥x∥)) • (coord 𝕜 x h)) ⟨x, submodule.mem_sp
 lemma coord_norm' (x : E) (h : x ≠ 0) : ∥(coe_from_ℝ 𝕜 (∥x∥)) • coord 𝕜 x h∥ = 1 :=
 by rw [norm_smul, norm_norm', coord_norm, mul_inv_cancel (mt norm_eq_zero.mp h)]
 
+theorem exists_dual_vector (x : E) (h : x ≠ 0) : ∃ g : E →L[𝕜] 𝕜, ∥g∥ = 1 ∧ g x = (coe_from_ℝ 𝕜 (∥x∥)) :=
+begin
+  let p := (submodule.span 𝕜 {x}),
+  let f := ((coe_from_ℝ 𝕜 (∥x∥)) • coord 𝕜 x h),
+  cases has_exists_extension_norm_eq.exists_extension_norm_eq E p f with g hg,
+  use g, split,
+  { rw [hg.2, coord_norm'] },
+  { calc g x = g (⟨x, submodule.mem_span_singleton_self x⟩ : submodule.span 𝕜 {x}) : by simp
+  ... = (∥x∥ • coord 𝕜 x h) (⟨x, submodule.mem_span_singleton_self x⟩ : submodule.span 𝕜 {x}) : by rw ← hg.1
+  ... = ∥x∥ : by rw coord_self' }
+end
+
 end generic
