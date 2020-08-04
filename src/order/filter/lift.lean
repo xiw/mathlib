@@ -25,9 +25,18 @@ protected def lift (f : filter α) (g : set α → filter β) :=
 
 variables {f f₁ f₂ : filter α} {g g₁ g₂ : set α → filter β}
 
-lemma has_basis.mem_lift_iff {ι} {p : ι → Prop} {s : ι → set α} {f : filter α} (hf : f.has_basis p s)
-  {β : ι → Type*} {pg : Π i, β i → Prop} {sg : Π i, β i → set γ} {g : set α → filter γ}
-  (hg : ∀ i, (g $ s i).has_basis (pg i) (sg i)) (gm : monotone g) {s : set γ} :
+/-- If `(p : ι → Prop, s : ι → set α)` is a basis of a filter `f`, `g` is a monotone function
+`set α → filter γ`, and for each `i`, `(pg : β i → Prop, sg : β i → set α)` is a basis
+of the filter `g (s i)`, then `(λ (i : ι) (x : β i), p i ∧ pg i x, λ (i : ι) (x : β i), sg i x)`
+is a basis of the filter `f.lift g`.
+
+This basis is parametrized by `i : ι` and `x : β i`, so in order to formulate this fact using
+`has_basis` one has to use `Σ i, β i` as the index type, see `filter.has_basis.lift`.
+This lemma states the corresponding `mem_iff` statement without using a sigma type. -/
+lemma has_basis.mem_lift_iff {ι} {p : ι → Prop} {s : ι → set α} {f : filter α}
+  (hf : f.has_basis p s) {β : ι → Type*} {pg : Π i, β i → Prop} {sg : Π i, β i → set γ}
+  {g : set α → filter γ} (hg : ∀ i, (g $ s i).has_basis (pg i) (sg i)) (gm : monotone g)
+  {s : set γ} :
   s ∈ f.lift g ↔ ∃ (i : ι) (hi : p i) (x : β i) (hx : pg i x), sg i x ⊆ s :=
 begin
   refine (mem_binfi _ ⟨univ, univ_sets _⟩).trans _,
@@ -38,6 +47,14 @@ begin
     exact hf.exists_iff (λ t₁ t₂ ht H, gm ht H) }
 end
 
+/-- If `(p : ι → Prop, s : ι → set α)` is a basis of a filter `f`, `g` is a monotone function
+`set α → filter γ`, and for each `i`, `(pg : β i → Prop, sg : β i → set α)` is a basis
+of the filter `g (s i)`, then `(λ (i : ι) (x : β i), p i ∧ pg i x, λ (i : ι) (x : β i), sg i x)`
+is a basis of the filter `f.lift g`.
+
+This basis is parametrized by `i : ι` and `x : β i`, so in order to formulate this fact using
+`has_basis` one has to use `Σ i, β i` as the index type. See also `filter.has_basis.mem_lift_iff`
+for the corresponding `mem_iff` statement formulated without using a sigma type. -/
 lemma has_basis.lift {ι} {p : ι → Prop} {s : ι → set α} {f : filter α} (hf : f.has_basis p s)
   {β : ι → Type*} {pg : Π i, β i → Prop} {sg : Π i, β i → set γ} {g : set α → filter γ}
   (hg : ∀ i, (g $ s i).has_basis (pg i) (sg i)) (gm : monotone g) :
@@ -75,7 +92,8 @@ lemma map_lift_eq {m : β → γ} (hg : monotone g) : map m (f.lift g) = f.lift 
 have monotone (map m ∘ g),
   from map_mono.comp hg,
 filter_eq $ set.ext $
-  by simp only [mem_lift_sets hg, mem_lift_sets this, exists_prop, forall_const, mem_map, iff_self, function.comp_app]
+  by simp only [mem_lift_sets hg, mem_lift_sets this, exists_prop, forall_const, mem_map, iff_self,
+    function.comp_app]
 
 lemma comap_lift_eq {m : γ → β} (hg : monotone g) : comap m (f.lift g) = f.lift (comap m ∘ g) :=
 have monotone (comap m ∘ g),
@@ -207,12 +225,16 @@ lemma has_basis.lift' {ι} {p : ι → Prop} {s} (hf : f.has_basis p s) (hh : mo
 begin
   refine ⟨λ t, (hf.mem_lift_iff _ (monotone_principal.comp hh)).trans _⟩,
   show ∀ i, (𝓟 (h (s i))).has_basis (λ j : unit, true) (λ (j : unit), h (s i)),
-    from λ i, has_basis_principal,
+    from λ i, has_basis_principal _,
   simp only [exists_const]
 end
 
 lemma mem_lift'_sets (hh : monotone h) {s : set β} : s ∈ (f.lift' h) ↔ (∃t∈f, h t ⊆ s) :=
 mem_lift_sets $ monotone_principal.comp hh
+
+lemma eventually_lift'_iff (hh : monotone h) {p : β → Prop} :
+  (∀ᶠ y in f.lift' h, p y) ↔ (∃ t ∈ f, ∀ y ∈ h t, p y) :=
+mem_lift'_sets hh
 
 lemma lift'_le {f : filter α} {g : set α → set β} {h : filter β} {s : set α}
   (hs : s ∈ f) (hg : 𝓟 (g s) ≤ h) : f.lift' g ≤ h :=
@@ -318,7 +340,38 @@ lift_infi $ by simp only [principal_eq_iff_eq, inf_principal, function.comp_app]
 
 theorem comap_eq_lift' {f : filter β} {m : α → β} :
   comap m f = f.lift' (preimage m) :=
-filter_eq $ set.ext $ by simp only [mem_lift'_sets, monotone_preimage, comap, exists_prop, forall_const, iff_self, mem_set_of_eq]
+filter.ext $ λ s, (mem_lift'_sets monotone_preimage).symm
+
+lemma eventually_lift'_powerset {f : filter α} {p : set α → Prop} :
+  (∀ᶠ s in f.lift' powerset, p s) ↔ ∃ s ∈ f, ∀ t ⊆ s, p t :=
+eventually_lift'_iff (λ _ _, powerset_mono.2)
+
+lemma eventually_lift'_powerset' {f : filter α} {p : set α → Prop}
+  (hp : ∀ ⦃s t⦄, s ⊆ t → p t → p s) :
+  (∀ᶠ s in f.lift' powerset, p s) ↔ ∃ s ∈ f, p s :=
+eventually_lift'_powerset.trans $ exists_congr $ λ s, exists_congr $
+  λ hsf, ⟨λ H, H s (subset.refl s), λ hs t ht, hp ht hs⟩
+
+instance lift'_powerset_ne_bot (f : filter α) : ne_bot (f.lift' powerset) :=
+(lift'_ne_bot_iff (λ _ _, powerset_mono.2)).2 $ λ _ _, powerset_nonempty
+
+@[simp] lemma eventually_lift'_powerset_forall {f : filter α} {p : α → Prop} :
+  (∀ᶠ s in f.lift' powerset, ∀ x ∈ s, p x) ↔ ∀ᶠ x in f, p x :=
+iff.trans (eventually_lift'_powerset' $ λ s t hst ht x hx, ht x (hst hx))
+  exists_sets_subset_iff
+
+alias eventually_lift'_powerset_forall ↔
+  filter.eventually.of_lift'_powerset filter.eventually.lift'_powerset
+
+@[simp] lemma eventually_lift'_powerset_eventually {f g : filter α} {p : α → Prop} :
+  (∀ᶠ s in f.lift' powerset, ∀ᶠ x in g, x ∈ s → p x) ↔ ∀ᶠ x in f ⊓ g, p x :=
+calc _ ↔ ∃ s ∈ f, ∀ᶠ x in g, x ∈ s → p x :
+  eventually_lift'_powerset' $ λ s t hst ht, ht.mono $ λ x hx hs, hx (hst hs)
+... ↔ ∃ (s ∈ f) (t ∈ g), ∀ x, x ∈ t → x ∈ s → p x :
+  by simp only [eventually_iff_exists_mem]
+... ↔ ∀ᶠ x in f ⊓ g, p x :
+  by simp only [filter.eventually, mem_inf_sets, subset_def, mem_inter_iff,
+    ← and_imp, and_comm, mem_set_of_eq]
 
 end lift'
 
@@ -330,7 +383,7 @@ have ∀(s:set α) (t : set β),
     𝓟 (set.prod s t) = (𝓟 s).comap prod.fst ⊓ (𝓟 t).comap prod.snd,
   by simp only [principal_eq_iff_eq, comap_principal, inf_principal]; intros; refl,
 begin
-  simp only [filter.lift', function.comp, this, -comap_principal, lift_inf, lift_const, lift_inf],
+  simp only [filter.lift', function.comp, this, lift_inf, lift_const, lift_inf],
   rw [← comap_lift_eq monotone_principal, ← comap_lift_eq monotone_principal],
   simp only [filter.prod, lift_principal2, eq_self_iff_true]
 end
