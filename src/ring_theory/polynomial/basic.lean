@@ -264,6 +264,36 @@ theorem is_fg_degree_le [is_noetherian_ring R] (n : ℕ) :
 is_noetherian_submodule_left.1 (is_noetherian_of_fg_of_noetherian _
   ⟨_, degree_le_eq_span_X_pow.symm⟩) _
 
+/-- The push-forward of an ideal `I` of `R` to `polynomial R` via inclusion
+ is exactly the set of polynomials whose coefficients are in `I` -/
+theorem map_C_eq_restrict_coeff {I : ideal R} :
+  (ideal.map C I : ideal (polynomial R)).1 = {f : polynomial R | ∀ n : ℕ, f.coeff n ∈ I} :=
+begin
+  refine le_antisymm _ _,
+  { intros x hx,
+    apply submodule.span_induction hx,
+    { intros f hf,
+      rw set.mem_image at hf,
+      cases hf with x hx,
+      rw ← hx.right,
+      intro n,
+      rw coeff_C,
+      by_cases (n = 0),
+      { simpa [h] using hx.left },
+      { simp [h] } },
+    { simp },
+    { exact λ f g hf hg n, by simp [I.add_mem (hf n) (hg n)] },
+    { refine λ f g hg n, _,
+      simp,
+      rw coeff_mul,
+      refine I.sum_mem (λ c hc, I.smul_mem (f.coeff c.fst) (hg c.snd)) } },
+  { intros f hf,
+    rw eq_sum_monomial_coeff f,
+    refine (map C I : ideal (polynomial R)).sum_mem (λ n hn, _),
+    rw [single_eq_C_mul_X, mul_comm],
+    exact (map C I : ideal (polynomial R)).smul_mem _ (mem_map_of_mem (hf n)) }
+end
+
 end ideal
 
 /-- Hilbert basis theorem: a polynomial ring over a noetherian ring is a noetherian ring. -/

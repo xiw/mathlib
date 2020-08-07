@@ -150,6 +150,19 @@ theorem mul_X_pow_eq_zero {p : polynomial R} {n : ℕ}
   (H : p * X ^ n = 0) : p = 0 :=
 ext $ λ k, (coeff_mul_X_pow p n k).symm.trans $ ext_iff.1 H (k+n)
 
+/-- Every polynomial is a sum of monomials -/
+lemma eq_sum_monomial_coeff (p : polynomial R) :
+  p = (p.support.sum) (λ n, monomial n (p.coeff n)) :=
+begin
+  ext,
+  simp [coeff_monomial],
+  by_cases (p.coeff n = 0),
+  { simp [h] },
+  { symmetry,
+    rw ite_eq_iff,
+    refine or.inl ⟨h, rfl⟩ }
+end
+
 end coeff
 
 end polynomial

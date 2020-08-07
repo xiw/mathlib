@@ -118,6 +118,17 @@ lemma is_jacobson_iso (e : R ≃+* S) : is_jacobson R ↔ is_jacobson S :=
 ⟨λ h, @is_jacobson_of_surjective _ _ _ _ h ⟨(e : R →+* S), e.surjective⟩,
   λ h, @is_jacobson_of_surjective _ _ _ _ h ⟨(e.symm : S →+* R), e.symm.surjective⟩⟩
 
+theorem is_jacobson_of_integral_hom [H : is_jacobson R] [algebra R S] :
+  (∃ (f : R →+* S), ∀ (x : R), is_integral R (f x)) → is_jacobson S :=
+begin
+  rintros ⟨f, hf⟩,
+  rw is_jacobson_iff_prime_eq,
+  intros P hP,
+  rw jacobson_eq_iff_jacobson_bot_eq,
+  rw eq_bot_iff,
+  sorry
+end
+
 end is_jacobson
 
 
@@ -271,5 +282,94 @@ begin
 end
 
 end localization
+
+section polynomial
+open polynomial
+
+lemma map_Inf_le_Inf_map (f : R →+* S) (M : set (ideal R)) : map f (Inf M) ≤ Inf (map f '' M) :=
+begin
+  refine le_Inf _,
+  intros j hj,
+  rw set.mem_image at hj,
+  cases hj with J hJ,
+  rw ← hJ.right,
+  refine map_mono (Inf_le hJ.left),
+end
+
+lemma bot_jacobson_polynomial :
+  jacobson (⊥ : ideal R) = ⊥ → jacobson (⊥ : ideal (polynomial R)) = ⊥ :=
+begin
+  intro h,
+  rw [ideal.jacobson, Inf_eq_infi] at h,
+  have : (⨅ (a : ideal (polynomial R))
+    (H : a ∈ (map C '' {J : ideal R | ⊥ ≤ J ∧ J.is_maximal} : set (ideal (polynomial R)))),
+    id a : ideal (polynomial R)) ≤ ⊥, {
+    sorry,
+  },
+  rw [ideal.jacobson, Inf_eq_infi, eq_bot_iff],
+  refine le_trans _ this,
+  have : (map C '' {J : ideal R | ⊥ ≤ J ∧ J.is_maximal} : set (ideal (polynomial R))) ⊆
+    {J : ideal (polynomial R) | ⊥ ≤ J ∧ J.is_maximal}, {
+    refine λ J hJ, ⟨bot_le, _⟩,
+    rw set.mem_image at hJ,
+    rcases hJ with ⟨j, hj⟩,
+    rw ← hj.right,
+    sorry,
+  },
+  refine le_trans _ (infi_le_infi_of_subset this),
+  refine le_of_eq (by refl),
+end
+
+lemma radical_bot_of_integral_domain [H : integral_domain R] :
+  radical (⊥ : ideal R) = ⊥ :=
+begin
+  sorry
+end
+
+private lemma help {R : Type u} [integral_domain R] [H : is_jacobson R] :
+  is_jacobson (polynomial R) :=
+begin
+  rw is_jacobson_iff_prime_eq,
+  intros I hI,
+  rw jacobson_eq_iff_jacobson_bot_eq,
+  by_cases hI : (I = ⊥),
+  {
+    suffices : (map (quotient.mk I) ⊥).jacobson = ⊥, by rwa map_bot at this,
+    rw ← map_jacobson_of_surjective quotient.mk_surjective _,
+    suffices : (⊥ : ideal (polynomial R)).jacobson = ⊥, by rw [this, map_bot],
+    refine bot_jacobson_polynomial (H _ radical_bot_of_integral_domain),
+    simp [hI],
+  },
+  {
+    have : ∃ f ∈ I, f ≠ ↑0, {
+      contrapose! hI,
+      rw eq_bot_iff,
+      refine λ g hg, (submodule.mem_bot _).2 (hI _ hg),
+    },
+    rcases this with ⟨f, hf⟩,
+    sorry,
+  }
+end
+
+theorem is_jacobson_polynomial_iff_is_jacobson : is_jacobson R ↔ is_jacobson (polynomial R) :=
+begin
+  split; introI H,
+  {
+    rw is_jacobson_iff_prime_eq,
+    introsI I hI,
+    sorry,
+  },
+  { exact is_jacobson_of_surjective ⟨eval₂_ring_hom (ring_hom.id _) 1, λ x, ⟨C x, by simp⟩⟩ }
+end
+
+lemma is_jacobson_mv_polynomial (H : is_jacobson R) (n : ℕ) :
+  is_jacobson (mv_polynomial (fin n) R) :=
+nat.rec_on n
+  ((is_jacobson_iso
+    ((mv_polynomial.ring_equiv_of_equiv R (equiv.equiv_pempty $ fin.elim0)).trans
+    (mv_polynomial.pempty_ring_equiv R))).mpr H)
+  (λ n hn, (is_jacobson_iso (mv_polynomial.fin_succ_equiv R n)).2 (is_jacobson_polynomial_iff_is_jacobson.1 hn))
+
+end polynomial
 
 end ideal

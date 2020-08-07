@@ -97,6 +97,24 @@ theorem mem_jacobson_iff {I : ideal R} {x : R} :
         neg_mul_eq_neg_mul_symm, neg_mul_eq_mul_neg, mul_comm x y]; exact M.mul_mem_right hy)
     (him hz)⟩
 
+lemma mem_jacobson_bot {I : ideal R} {x : R} :
+  x ∈ jacobson (⊥ : ideal R) ↔ ∀ y, is_unit (x * y + 1) :=
+begin
+  split,
+  {
+    contrapose!,
+    rintros ⟨y, hy⟩ h,
+    rw mem_jacobson_iff at h,
+    rcases h y with ⟨z, hz⟩,
+    refine hy (is_unit_iff_exists_inv.2 ⟨z, _⟩),
+    rw submodule.mem_bot at hz,
+    rwa [add_mul, one_mul, ← sub_eq_zero],
+  },
+  {
+    sorry,
+  }
+end
+
 /-- An ideal equals its jacobson radical iff it is the intersection of a set of maximal ideal.
 Allowing the set to include ⊤ is equivalent, and is included only to simplify some proofs. -/
 theorem eq_jacobson_iff_Inf_maximal {I : ideal R} :
