@@ -97,8 +97,7 @@ theorem mem_jacobson_iff {I : ideal R} {x : R} :
         neg_mul_eq_neg_mul_symm, neg_mul_eq_mul_neg, mul_comm x y]; exact M.mul_mem_right hy)
     (him hz)⟩
 
-lemma mem_jacobson_bot {I : ideal R} {x : R} :
-  x ∈ jacobson (⊥ : ideal R) ↔ ∀ y, is_unit (x * y + 1) :=
+lemma mem_jacobson_bot {x : R} : x ∈ jacobson (⊥ : ideal R) ↔ ∀ y, is_unit (x * y + 1) :=
 begin
   split,
   {
@@ -111,7 +110,15 @@ begin
     rwa [add_mul, one_mul, ← sub_eq_zero],
   },
   {
-    sorry,
+    intro h,
+    rw mem_jacobson_iff,
+    intro y,
+    specialize h y,
+    rw is_unit_iff_exists_inv at h,
+    cases h with b hb,
+    use b,
+    rw [submodule.mem_bot, ← hb],
+    ring,
   }
 end
 
@@ -174,6 +181,11 @@ begin
     { exact or.inl htop },
     { exact or.inr ⟨map_mono hJ.left.left, hmax⟩ } }
 end
+
+lemma map_jacobson_of_bijective {f : R →+* S} (hf : function.bijective f) {I : ideal R} :
+  map f (I.jacobson) = (map f I).jacobson :=
+map_jacobson_of_surjective (hf.right)
+  (le_trans (le_of_eq (f.injective_iff_ker_eq_bot.1 hf.left)) (bot_le))
 
 theorem comap_jacobson_of_surjective {f : R →+* S} (hf : function.surjective f) {K : ideal S} :
   comap f (K.jacobson) = (comap f K).jacobson :=
@@ -238,7 +250,7 @@ begin
   split,
   { intro h,
     have := congr_arg (map (quotient.mk I)) h,
-    rw [map_radical hf (le_of_eq mk_ker), map_jacobson_of_surjective hf (le_of_eq mk_ker)] at this,
+    rw [map_radical_of_surjective hf (le_of_eq mk_ker), map_jacobson_of_surjective hf (le_of_eq mk_ker)] at this,
     simpa using this },
   { intro h,
     have := congr_arg (comap (quotient.mk I)) h,

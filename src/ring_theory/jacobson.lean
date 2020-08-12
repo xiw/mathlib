@@ -50,8 +50,6 @@ namespace ideal
 variables {R : Type u} [comm_ring R] {I : ideal R}
 variables {S : Type v} [comm_ring S]
 
---local attribute [instance] classical.prop_decidable
-
 section is_jacobson
 
 /-- A ring is a Jacobson ring if for every radical ideal `I`,
@@ -286,82 +284,179 @@ end localization
 section polynomial
 open polynomial
 
-lemma map_Inf_le_Inf_map (f : R →+* S) (M : set (ideal R)) : map f (Inf M) ≤ Inf (map f '' M) :=
-begin
-  refine le_Inf _,
-  intros j hj,
-  rw set.mem_image at hj,
-  cases hj with J hJ,
-  rw ← hJ.right,
-  refine map_mono (Inf_le hJ.left),
-end
-
 lemma bot_jacobson_polynomial :
   jacobson (⊥ : ideal R) = ⊥ → jacobson (⊥ : ideal (polynomial R)) = ⊥ :=
 begin
   intro h,
-  rw [ideal.jacobson, Inf_eq_infi] at h,
-  have : (⨅ (a : ideal (polynomial R))
-    (H : a ∈ (map C '' {J : ideal R | ⊥ ≤ J ∧ J.is_maximal} : set (ideal (polynomial R)))),
-    id a : ideal (polynomial R)) ≤ ⊥, {
-    sorry,
-  },
-  rw [ideal.jacobson, Inf_eq_infi, eq_bot_iff],
-  refine le_trans _ this,
-  have : (map C '' {J : ideal R | ⊥ ≤ J ∧ J.is_maximal} : set (ideal (polynomial R))) ⊆
-    {J : ideal (polynomial R) | ⊥ ≤ J ∧ J.is_maximal}, {
-    refine λ J hJ, ⟨bot_le, _⟩,
-    rw set.mem_image at hJ,
-    rcases hJ with ⟨j, hj⟩,
-    rw ← hj.right,
-    sorry,
-  },
-  refine le_trans _ (infi_le_infi_of_subset this),
-  refine le_of_eq (by refl),
+  have : (Inf (map C '' {J : ideal R | ⊥ ≤ J ∧ J.is_maximal}) : ideal (polynomial R)) = ⊥,
+  { rw eq_bot_iff,
+    intros f hf,
+    rw submodule.mem_bot,
+    ext,
+    rw coeff_zero,
+    suffices : f.coeff n ∈ ⊥, by rwa submodule.mem_bot at this,
+    rw [← h, ideal.jacobson],
+    rw mem_Inf at *,
+    intros j hj,
+    have : f ∈ (map C j : ideal (polynomial R)),
+    { refine hf _,
+      rw set.mem_image,
+      refine ⟨j, ⟨hj, rfl⟩⟩ },
+    rw mem_map_C_iff at this,
+    exact this n },
+  rw eq_bot_iff,
+  refine le_trans _ (le_of_eq this),
+  rw ideal.jacobson,
+  simp,
+  introsI J j hj hJ,
+  have : J.jacobson = J,
+  { rw [← hJ, jacobson_eq_iff_jacobson_bot_eq],
+    suffices : (⊥ : ideal (polynomial j.quotient)).jacobson = ⊥,
+    { replace this := congr_arg (map (poly_quot j).to_ring_hom) this,
+      rwa [map_jacobson_of_bijective _, map_bot] at this,
+      exact (ring_equiv.bijective (poly_quot j)) },
+    rw eq_bot_iff,
+    intros f hf,
+    rw mem_jacobson_bot at hf,
+    specialize hf (X : polynomial (j.quotient)),
+    have hX : (X : polynomial j.quotient) ≠ 0 := λ hX, by simpa using congr_arg (λ f, coeff f 1) hX,
+    simpa [hX] using eq_C_of_degree_eq_zero (degree_eq_zero_of_is_unit hf) },
+  rw ← this,
+  refine Inf_le_Inf (λ a ha, ha.right),
 end
 
-lemma radical_bot_of_integral_domain [H : integral_domain R] :
-  radical (⊥ : ideal R) = ⊥ :=
-begin
-  sorry
-end
+local attribute [instance] classical.prop_decidable
 
-private lemma help {R : Type u} [integral_domain R] [H : is_jacobson R] :
-  is_jacobson (polynomial R) :=
+example {A B C : Type*} [comm_ring A] [comm_ring B] [comm_ring C] {m : ideal C}
+  (f : A →+* B) (g : B →+* C) (hf : function.injective f) (hg : function.injective g)
+  : is_maximal m → is_maximal (comap f (comap g m)) → is_maximal (comap g m) :=
 begin
-  rw is_jacobson_iff_prime_eq,
-  intros I hI,
-  rw jacobson_eq_iff_jacobson_bot_eq,
-  by_cases hI : (I = ⊥),
+  intros h h',
+  refine ⟨comap_ne_top _ h.left, _⟩,
+  by_contradiction H, push_neg at H,
+  cases H with J hJ,
+  have : comap f (comap g m) ≤ comap f J := comap_mono (le_of_lt hJ.left),
+  cases lt_or_eq_of_le this with hc hc,
   {
-    suffices : (map (quotient.mk I) ⊥).jacobson = ⊥, by rwa map_bot at this,
-    rw ← map_jacobson_of_surjective quotient.mk_surjective _,
-    suffices : (⊥ : ideal (polynomial R)).jacobson = ⊥, by rw [this, map_bot],
-    refine bot_jacobson_polynomial (H _ radical_bot_of_integral_domain),
-    simp [hI],
+    have := h'.right _ hc,
+    rw comap_eq_top_iff at this,
+    exact hJ.right this,
   },
   {
-    have : ∃ f ∈ I, f ≠ ↑0, {
-      contrapose! hI,
-      rw eq_bot_iff,
-      refine λ g hg, (submodule.mem_bot _).2 (hI _ hg),
-    },
-    rcases this with ⟨f, hf⟩,
-    sorry,
+    refine hJ.left.right (_),
+    sorry
   }
+end
+
+lemma ker_maximal {A B : Type*} [comm_ring A] [comm_ring B] {m : ideal B}
+  (hm : m.is_maximal) (f : A →+* m.quotient) : is_maximal f.ker :=
+begin
+  sorry,
+end
+
+lemma six {A B : Type*} [integral_domain A] [integral_domain B] [is_jacobson A]
+  (f : A →+* B) (hf : function.injective f)
+  {a : A} (ha : a ≠ ↑0) : jacobson (⊥ : ideal B) = ⊥ :=
+begin
+  let Aₐ := localization (M a),
+  let ϕA := localization.of (M a),
+  let Bₐ := localization (M (f a)),
+  let ϕB := localization.of (M (f a)),
+  let g : A →+* Bₐ := ring_hom.comp ϕB.to_map f,
+  have : ∀ y : (M a), f y ∈ M (f a), {
+    intros y,
+    cases y with y hy,
+    erw submonoid.mem_closure_singleton at hy ⊢,
+    cases hy with n hn,
+    use n,
+    rw [← ring_hom.map_pow f a n, hn],
+    refl,
+  },
+  let fₐ : Aₐ →+* Bₐ := localization_map.map ϕA this ϕB,
+  haveI : is_jacobson Aₐ := is_jacobson_localization ϕA,
+  have hBₐ : is_jacobson Bₐ := sorry,
+  have : ∀ m : ideal Bₐ, is_maximal m → is_maximal (comap ϕB.to_map m), {
+    intros m hm,
+    let σ : B →+* m.quotient := (quotient.mk m).comp ϕB.to_map,
+    have : σ.ker = (comap ϕB.to_map m), {
+      refine le_antisymm _ _,
+      { intros x hx,
+        rw [mem_comap, ← quotient.eq_zero_iff_mem],
+        rw ring_hom.mem_ker at hx,
+        simpa using hx },
+      { intros x hx,
+        rw ring_hom.mem_ker,
+        simp,
+        rwa quotient.eq_zero_iff_mem }
+    },
+    rw ← this, --TODO: I think this approach is bad since σ isn't a surjection
+    exact ker_maximal hm σ,
+  },
+  have hM : M (f a) ≤ non_zero_divisors B, {
+    intros x hx,
+    rw mem_non_zero_divisors_iff_ne_zero,
+    rw submonoid.mem_closure_singleton at hx,
+    cases hx with n hn,
+    rw ← hn,
+    exact λ h, absurd (pow_eq_zero h) (λ h, ha (hf (trans h f.map_zero.symm))),
+  },
+  have hϕB : function.injective ϕB.to_map := to_map_injective_of_le_non_zero_divisors ϕB hM,
+  rw [ring_hom.injective_iff_ker_eq_bot, ker_eq_comap_bot] at hϕB,
+  rw eq_bot_iff,
+  refine le_trans _ (le_of_eq hϕB),
+  rw ← hBₐ ⊥ (radical_bot_of_is_integral_domain (is_integral_domain_of_le_non_zero_divisors ϕB hM)),
+  dunfold ideal.jacobson,
+  rw [comap_Inf', Inf_eq_infi],
+  -- refine infi_le_infi_of_subset (λ j hj, ⟨bot_le, _⟩),
+  -- cases hj with J hJ,
+  -- rw ← hJ.right,
+  -- exact this J hJ.1.2,
+  simp,
+  intros I I' hI' hI,
 end
 
 theorem is_jacobson_polynomial_iff_is_jacobson : is_jacobson R ↔ is_jacobson (polynomial R) :=
 begin
   split; introI H,
-  {
-    rw is_jacobson_iff_prime_eq,
+  { rw is_jacobson_iff_prime_eq,
     introsI I hI,
-    sorry,
+    rw jacobson_eq_iff_jacobson_bot_eq,
+    let R' := set.range ((quotient.mk I).comp C),
+    let ϕ : R →+* R' := ((quotient.mk I).comp C).cod_restrict R' (set.mem_range_self),
+    have hϕ : function.surjective ϕ,
+    { rintro ⟨⟨x⟩, hx⟩,
+      cases hx with y hy,
+      use y,
+      refine subtype.eq _,
+      simp,
+      exact hy },
+    haveI : is_subring R' := ring_hom.is_subring_set_range ((quotient.mk I).comp C),
+    haveI hR' : is_jacobson R' := is_jacobson_of_surjective ⟨ϕ, hϕ⟩,
+    let ϕ' : (polynomial R') →+* I.quotient := eval₂_ring_hom (is_subring.subtype R') (quotient.mk I X),
+    have hϕ'_sur : function.surjective ϕ',
+    { rintro ⟨f⟩,
+      use eval₂ (ring_hom.comp (C : R' →+* polynomial R') ϕ) X f,
+      refine polynomial.induction_on' f _ _,
+      { simp_intros p q hp hq,
+        rw [hp, hq] },
+      { intros n a,
+        rw [eval₂_monomial (C.comp ϕ), monomial_eq_smul_X, ← C_mul' a (X ^ n)],
+        simp,
+        refl } },
+    by_cases hϕ'_inj : function.injective ϕ',
+    { suffices : (⊥ : ideal (polynomial R')).jacobson = ⊥,
+      { have := congr_arg (map ϕ') this,
+        rwa [map_jacobson_of_bijective ⟨hϕ'_inj, hϕ'_sur⟩, map_bot] at this },
+      exact bot_jacobson_polynomial (hR' ⊥ radical_bot_of_integral_domain) },
+    {
+      refine six (is_subring.subtype R') subtype.coe_injective sorry,
+      sorry,
+    }
   },
   { exact is_jacobson_of_surjective ⟨eval₂_ring_hom (ring_hom.id _) 1, λ x, ⟨C x, by simp⟩⟩ }
 end
 
+/-- Classical Nullstellensatz is a special case of this theorem -/
 lemma is_jacobson_mv_polynomial (H : is_jacobson R) (n : ℕ) :
   is_jacobson (mv_polynomial (fin n) R) :=
 nat.rec_on n

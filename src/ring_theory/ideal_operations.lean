@@ -374,6 +374,21 @@ theorem radical_eq_top : radical I = ⊤ ↔ I = ⊤ :=
 ⟨λ h, (eq_top_iff_one _).2 $ let ⟨n, hn⟩ := (eq_top_iff_one _).1 h in
   @one_pow R _ n ▸ hn, λ h, h.symm ▸ radical_top R⟩
 
+lemma radical_bot_of_integral_domain {R : Type u} [integral_domain R]
+  : radical (⊥ : ideal R) = ⊥ :=
+eq_bot_iff.2 (λ x hx, hx.rec_on (λ n hn, pow_eq_zero hn))
+
+lemma radical_bot_of_is_integral_domain (H : is_integral_domain R) : radical (⊥ : ideal R) = ⊥ :=
+begin
+  refine eq_bot_iff.2 (λ x hx, hx.rec_on (λ n hn, _)),
+  rw submodule.mem_bot at hn ⊢,
+  induction n with m hm,
+  { rw pow_zero at hn,
+    rw [← mul_one x, hn, mul_zero] },
+  { rw pow_succ at hn,
+    exact or.rec_on (H.eq_zero_or_eq_zero_of_mul_eq_zero _ _ hn) (λ h, h) hm }
+end
+
 theorem is_prime.radical (H : is_prime I) : radical I = I :=
 le_antisymm (λ r ⟨n, hrni⟩, H.mem_of_pow_mem n hrni) le_radical
 
@@ -848,30 +863,35 @@ by ext; rw [ring_hom.mem_ker, mem_comap, submodule.mem_bot]
 lemma ker_le_comap {K : ideal S} (f : R →+* S) : f.ker ≤ comap f K :=
 λ x hx, mem_comap.2 (((ring_hom.mem_ker f).1 hx).symm ▸ K.zero_mem)
 
+lemma map_Inf_le_Inf_map {f : R →+* S} {A : set (ideal R)} : map f (Inf A) ≤ Inf (map f '' A) :=
+begin
+  refine le_Inf _,
+  intros j hj,
+  rw set.mem_image at hj,
+  cases hj with J hJ,
+  rw ← hJ.right,
+  refine map_mono (Inf_le hJ.left),
+end
+
 lemma map_Inf {A : set (ideal R)} {f : R →+* S} (hf : function.surjective f) :
   (∀ J ∈ A, ring_hom.ker f ≤ J) → map f (Inf A) = Inf (map f '' A) :=
 begin
-  refine λ h, le_antisymm (le_Inf _) _,
-  { intros j hj y hy,
-    cases (mem_map_iff_of_surjective f hf).1 hy with x hx,
-    cases (set.mem_image _ _ _).mp hj with J hJ,
-    rw [← hJ.right, ← hx.right],
-    exact mem_map_of_mem (Inf_le_of_le hJ.left (le_of_eq rfl) hx.left) },
-  { intros y hy,
-    cases hf y with x hx,
-    rw ← hx,
-    refine mem_map_of_mem _,
-    rw Inf_eq_infi at ⊢ hy,
-    simp at ⊢ hy,
-    intros J hJ,
-    cases (mem_map_iff_of_surjective f hf).1 (hy (map f J) J hJ rfl) with x' hx',
-    have : x - x' ∈ J,
-    { apply h J hJ,
-      rw [ring_hom.mem_ker, ring_hom.map_sub, hx, hx'.right],
-      exact sub_self y },
-    have : x - x' + x' ∈ J := J.add_mem this hx'.left,
-    ring at this,
-    exact this }
+  refine λ h, le_antisymm map_Inf_le_Inf_map _,
+  intros y hy,
+  cases hf y with x hx,
+  rw ← hx,
+  refine mem_map_of_mem _,
+  rw Inf_eq_infi at ⊢ hy,
+  simp at ⊢ hy,
+  intros J hJ,
+  cases (mem_map_iff_of_surjective f hf).1 (hy (map f J) J hJ rfl) with x' hx',
+  have : x - x' ∈ J,
+  { apply h J hJ,
+    rw [ring_hom.mem_ker, ring_hom.map_sub, hx, hx'.right],
+    exact sub_self y },
+  have : x - x' + x' ∈ J := J.add_mem this hx'.left,
+  ring at this,
+  exact this
 end
 
 theorem map_is_prime_of_surjective {f : R →+* S} (hf : function.surjective f) {I : ideal R} (H : is_prime I) :
@@ -905,7 +925,7 @@ begin
       exact mem_map_of_mem h } }
 end
 
-theorem map_radical {f : R →+* S} (hf : function.surjective f) {I : ideal R} :
+theorem map_radical_of_surjective {f : R →+* S} (hf : function.surjective f) {I : ideal R} :
   ring_hom.ker f ≤ I → map f (I.radical) = (map f I).radical :=
 begin
   intro h,

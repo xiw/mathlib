@@ -314,3 +314,10 @@ instance : integral_domain (integral_closure R S) :=
   ..(integral_closure R S).comm_ring R S }
 
 end integral_domain
+
+section is_integral_hom
+variables {R S : Type*} [comm_ring R] [integral_domain S] [algebra R S]
+
+def is_integral_hom (f : R →+* S) := ∀ x : R, is_integral R (f x)
+
+end is_integral_hom

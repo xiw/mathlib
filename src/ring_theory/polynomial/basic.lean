@@ -266,12 +266,12 @@ is_noetherian_submodule_left.1 (is_noetherian_of_fg_of_noetherian _
 
 /-- The push-forward of an ideal `I` of `R` to `polynomial R` via inclusion
  is exactly the set of polynomials whose coefficients are in `I` -/
-theorem map_C_eq_restrict_coeff {I : ideal R} :
-  (ideal.map C I : ideal (polynomial R)).1 = {f : polynomial R | ∀ n : ℕ, f.coeff n ∈ I} :=
+theorem mem_map_C_iff {I : ideal R} {f : polynomial R} :
+  f ∈ (ideal.map C I : ideal (polynomial R)) ↔ ∀ n : ℕ, f.coeff n ∈ I :=
 begin
-  refine le_antisymm _ _,
-  { intros x hx,
-    apply submodule.span_induction hx,
+  split,
+  { intros hf,
+    apply submodule.span_induction hf,
     { intros f hf,
       rw set.mem_image at hf,
       cases hf with x hx,
@@ -287,12 +287,67 @@ begin
       simp,
       rw coeff_mul,
       refine I.sum_mem (λ c hc, I.smul_mem (f.coeff c.fst) (hg c.snd)) } },
-  { intros f hf,
+  { intros hf,
     rw eq_sum_monomial_coeff f,
     refine (map C I : ideal (polynomial R)).sum_mem (λ n hn, _),
     rw [single_eq_C_mul_X, mul_comm],
     exact (map C I : ideal (polynomial R)).smul_mem _ (mem_map_of_mem (hf n)) }
 end
+
+lemma poly_help1 {I : ideal R} :
+  ∀ a ∈ I, ((quotient.mk (map C I : ideal (polynomial R))).comp C) a = 0 :=
+begin
+  intros a ha,
+  rw [ring_hom.comp_apply, quotient.eq_zero_iff_mem],
+  exact mem_map_of_mem ha,
+end
+
+lemma poly_help2 {I : ideal R} :
+  ∀ f ∈ (map C I : ideal (polynomial R)), eval₂_ring_hom (C.comp (quotient.mk I)) X f = 0 :=
+begin
+  intros a ha,
+  rw eq_sum_monomial_coeff a,
+  dsimp,
+  erw eval₂_sum,
+  refine finset.sum_eq_zero (λ n hn, _),
+  dsimp,
+  rw eval₂_monomial,
+  refine mul_eq_zero_of_left _ _,
+  refine polynomial.ext (λ m, _),
+  erw coeff_C,
+  by_cases h : m = 0,
+  { simpa [h] using quotient.eq_zero_iff_mem.2 ((mem_map_C_iff.1 ha) n) },
+  { simp [h] }
+end
+
+noncomputable def poly_quot (I : ideal R) :
+  polynomial (I.quotient) ≃+* (map C I : ideal (polynomial R)).quotient :=
+{ to_fun := eval₂_ring_hom
+    (quotient.lift I ((quotient.mk (map C I : ideal (polynomial R))).comp C) poly_help1)
+    ((quotient.mk (map C I : ideal (polynomial R)) X)),
+  inv_fun := quotient.lift (map C I : ideal (polynomial R))
+    (eval₂_ring_hom (C.comp (quotient.mk I)) X) poly_help2,
+  map_mul' := λ f g, by simp,
+  map_add' := λ f g, by simp,
+  left_inv := by {
+    intro f,
+    apply polynomial.induction_on' f,
+    { simp_intros p q hp hq,
+      rw [hp, hq] },
+    { intros n a,
+      rcases a with x,
+      simp [monomial_eq_smul_X, C_mul'] }
+  },
+  right_inv := by {
+    intro x,
+    rcases x with f,
+    apply polynomial.induction_on' f,
+    { simp_intros p q hp hq,
+      rw [hp, hq] },
+    { intros n a,
+      simp [monomial_eq_smul_X, ← C_mul' a (X ^ n)] },
+  },
+}
 
 end ideal
 
