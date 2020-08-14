@@ -5,6 +5,7 @@ Authors: Devon Tuma
 -/
 import data.mv_polynomial
 import ring_theory.ideal_operations
+import ring_theory.ideal_over
 import ring_theory.localization
 import ring_theory.jacobson_ideal
 
@@ -51,6 +52,7 @@ variables {R : Type u} [comm_ring R] {I : ideal R}
 variables {S : Type v} [comm_ring S]
 
 section is_jacobson
+-- set_option pp.all true
 
 /-- A ring is a Jacobson ring if for every radical ideal `I`,
  the Jacobson radical of `I` is equal to `I`.
@@ -116,10 +118,10 @@ lemma is_jacobson_iso (e : R ≃+* S) : is_jacobson R ↔ is_jacobson S :=
 ⟨λ h, @is_jacobson_of_surjective _ _ _ _ h ⟨(e : R →+* S), e.surjective⟩,
   λ h, @is_jacobson_of_surjective _ _ _ _ h ⟨(e.symm : S →+* R), e.symm.surjective⟩⟩
 
-theorem is_jacobson_of_integral_hom [H : is_jacobson R] [algebra R S] :
-  (∃ (f : R →+* S), ∀ (x : R), is_integral R (f x)) → is_jacobson S :=
+theorem is_jacobson_of_integral [H : is_jacobson R] [algebra R S] :
+  (∀ (x : R), is_integral R (algebra_map R S x)) → is_jacobson S :=
 begin
-  rintros ⟨f, hf⟩,
+  intro h,
   rw is_jacobson_iff_prime_eq,
   intros P hP,
   rw jacobson_eq_iff_jacobson_bot_eq,
@@ -327,42 +329,26 @@ end
 
 local attribute [instance] classical.prop_decidable
 
-example {A B C : Type*} [comm_ring A] [comm_ring B] [comm_ring C] {m : ideal C}
-  (f : A →+* B) (g : B →+* C) (hf : function.injective f) (hg : function.injective g)
-  : is_maximal m → is_maximal (comap f (comap g m)) → is_maximal (comap g m) :=
-begin
-  intros h h',
-  refine ⟨comap_ne_top _ h.left, _⟩,
-  by_contradiction H, push_neg at H,
-  cases H with J hJ,
-  have : comap f (comap g m) ≤ comap f J := comap_mono (le_of_lt hJ.left),
-  cases lt_or_eq_of_le this with hc hc,
-  {
-    have := h'.right _ hc,
-    rw comap_eq_top_iff at this,
-    exact hJ.right this,
-  },
-  {
-    refine hJ.left.right (_),
-    sorry
-  }
-end
-
-lemma ker_maximal {A B : Type*} [comm_ring A] [comm_ring B] {m : ideal B}
-  (hm : m.is_maximal) (f : A →+* m.quotient) : is_maximal f.ker :=
-begin
-  sorry,
-end
-
 lemma six {A B : Type*} [integral_domain A] [integral_domain B] [is_jacobson A]
   (f : A →+* B) (hf : function.injective f)
-  {a : A} (ha : a ≠ ↑0) : jacobson (⊥ : ideal B) = ⊥ :=
+  {a : A} (ha : a ≠ ↑0)
+  (ha' : ∀ (x : localization (M (f a))), @is_integral A (localization (M (f a))) _ _
+    ((localization.of (M (f a))).to_map.comp f).to_algebra x)
+  : jacobson (⊥ : ideal B) = ⊥ :=
 begin
   let Aₐ := localization (M a),
   let ϕA := localization.of (M a),
   let Bₐ := localization (M (f a)),
   let ϕB := localization.of (M (f a)),
   let g : A →+* Bₐ := ring_hom.comp ϕB.to_map f,
+  haveI hM : le_non_zero_divisors (M (f a)) := by {
+    intros x hx,
+    rw mem_non_zero_divisors_iff_ne_zero,
+    rw submonoid.mem_closure_singleton at hx,
+    cases hx with n hn,
+    rw ← hn,
+    exact λ h, absurd (pow_eq_zero h) (λ h, ha (hf (trans h f.map_zero.symm))),
+  },
   have : ∀ y : (M a), f y ∈ M (f a), {
     intros y,
     cases y with y hy,
@@ -377,42 +363,23 @@ begin
   have hBₐ : is_jacobson Bₐ := sorry,
   have : ∀ m : ideal Bₐ, is_maximal m → is_maximal (comap ϕB.to_map m), {
     intros m hm,
-    let σ : B →+* m.quotient := (quotient.mk m).comp ϕB.to_map,
-    have : σ.ker = (comap ϕB.to_map m), {
-      refine le_antisymm _ _,
-      { intros x hx,
-        rw [mem_comap, ← quotient.eq_zero_iff_mem],
-        rw ring_hom.mem_ker at hx,
-        simpa using hx },
-      { intros x hx,
-        rw ring_hom.mem_ker,
-        simp,
-        rwa quotient.eq_zero_iff_mem }
-    },
-    rw ← this, --TODO: I think this approach is bad since σ isn't a surjection
-    exact ker_maximal hm σ,
+    haveI tower : @is_algebra_tower A B Bₐ _ _ _ f.to_algebra ϕB.to_map.to_algebra (ϕB.to_map.comp f).to_algebra :=
+      @is_algebra_tower.of_algebra_map_eq A B Bₐ _ _ _ f.to_algebra ϕB.to_map.to_algebra (ϕB.to_map.comp f).to_algebra
+      (λ x, ring_hom.comp_apply ϕB.to_map f x),
+    refine @mid_max A B Bₐ _ _ _ m f.to_algebra ϕB.to_map.to_algebra (ϕB.to_map.comp f).to_algebra
+      tower (to_map_injective_of_le_non_zero_divisors ϕB) ha' hm,
   },
-  have hM : M (f a) ≤ non_zero_divisors B, {
-    intros x hx,
-    rw mem_non_zero_divisors_iff_ne_zero,
-    rw submonoid.mem_closure_singleton at hx,
-    cases hx with n hn,
-    rw ← hn,
-    exact λ h, absurd (pow_eq_zero h) (λ h, ha (hf (trans h f.map_zero.symm))),
-  },
-  have hϕB : function.injective ϕB.to_map := to_map_injective_of_le_non_zero_divisors ϕB hM,
+  have hϕB : function.injective ϕB.to_map := to_map_injective_of_le_non_zero_divisors ϕB,
   rw [ring_hom.injective_iff_ker_eq_bot, ker_eq_comap_bot] at hϕB,
   rw eq_bot_iff,
   refine le_trans _ (le_of_eq hϕB),
-  rw ← hBₐ ⊥ (radical_bot_of_is_integral_domain (is_integral_domain_of_le_non_zero_divisors ϕB hM)),
+  rw ← hBₐ ⊥ radical_bot_of_integral_domain,
   dunfold ideal.jacobson,
   rw [comap_Inf', Inf_eq_infi],
-  -- refine infi_le_infi_of_subset (λ j hj, ⟨bot_le, _⟩),
-  -- cases hj with J hJ,
-  -- rw ← hJ.right,
-  -- exact this J hJ.1.2,
-  simp,
-  intros I I' hI' hI,
+  refine infi_le_infi_of_subset (λ j hj, ⟨bot_le, _⟩),
+  cases hj with J hJ,
+  rw ← hJ.right,
+  exact this J hJ.1.2,
 end
 
 theorem is_jacobson_polynomial_iff_is_jacobson : is_jacobson R ↔ is_jacobson (polynomial R) :=
@@ -449,7 +416,13 @@ begin
         rwa [map_jacobson_of_bijective ⟨hϕ'_inj, hϕ'_sur⟩, map_bot] at this },
       exact bot_jacobson_polynomial (hR' ⊥ radical_bot_of_integral_domain) },
     {
-      refine six (is_subring.subtype R') subtype.coe_injective sorry,
+      have : ∃ f ∈ (ϕ').ker, degree f > 0, {
+        sorry,
+      },
+      rcases this with ⟨f, hfI, hf⟩,
+      let a := f.leading_coeff,
+      have : a ≠ 0 := sorry,
+      refine six (is_subring.subtype R') subtype.coe_injective this _,
       sorry,
     }
   },

@@ -143,6 +143,27 @@ lemma is_maximal_of_is_integral_of_is_maximal_comap
   λ J I_lt_J, let ⟨I_le_J, x, hxJ, hxI⟩ := lt_iff_le_and_exists.mp I_lt_J
   in comap_eq_top_iff.mp (hI.2 _ (comap_lt_comap_of_integral_mem_sdiff I_le_J ⟨hxJ, hxI⟩ (hRS x))) ⟩
 
+-- Is there anything in mathlib saying that if `f : R →+* S` is an integral ring extension, and `m` is maximal then `comap (algebra_map R S) m` is also maximal? I've found in `ring_theory/ideal/over.lean` the converse statement `is_maximal_of_is_integral_of_is_maximal_comap`, but there isn't a statement along the lines of `is_maximal_comap_of_is_integral_of_is_maximal`. I would guess this doesn't exist yet since I'd expect it to be in the same file, but I wanted to check before trying to write a proof myself.
+lemma is_maximal_comap_of_is_integral_of_is_maximal
+  (hRS : ∀ (x : S), is_integral R x) (I : ideal S) [I.is_prime]
+  --(hS : function.injective (algebra_map R S))
+  (hI : is_maximal I) : is_maximal (I.comap (algebra_map R S)) :=
+begin
+  -- unfreezingI {contrapose hI},
+  -- rw ideal.is_maximal at hI ⊢,
+  -- simp at hI ⊢,
+  -- intro h,
+  -- specialize hI h,
+  -- rcases hI with ⟨J, ⟨hJ, hJ'⟩⟩,
+  ---------
+  -- refine ⟨comap_ne_top (algebra_map R S) hI.left, _⟩,
+  -- intros J I_lt_J,
+  -- rcases lt_iff_le_and_exists.mp I_lt_J with ⟨I_le_J, x, hxJ, hxI⟩,
+  -- have := hI.right,
+  -- specialize this (map (algebra_map R S) J),
+  sorry,
+end
+
 lemma integral_closure.comap_ne_bot [nontrivial R] {I : ideal (integral_closure R S)}
   (I_ne_bot : I ≠ ⊥) : I.comap (algebra_map R (integral_closure R S)) ≠ ⊥ :=
 let ⟨x, x_mem, x_ne_zero⟩ := I.ne_bot_iff.mp I_ne_bot in
@@ -162,6 +183,52 @@ lemma integral_closure.is_maximal_of_is_maximal_comap
   (I : ideal (integral_closure R S)) [I.is_prime]
   (hI : is_maximal (I.comap (algebra_map R (integral_closure R S)))) : is_maximal I :=
 is_maximal_of_is_integral_of_is_maximal_comap (λ x, integral_closure.is_integral x) I hI
+
+lemma back_int (A B C : Type*) [comm_ring A] [comm_ring B] [comm_ring C]
+  [algebra A B] [algebra B C] [algebra A C] [is_algebra_tower A B C]
+  (H : function.injective (algebra_map B C))
+  : (∀ x : C, is_integral A x) → (∀ x : B, is_integral A x) :=
+begin
+  intros h x,
+  specialize h (algebra_map B C x),
+  cases h with p hp,
+  refine ⟨p, ⟨hp.left, _⟩⟩,
+  replace hp := hp.right,
+  rw [aeval_def, is_algebra_tower.algebra_map_eq A B C,
+    ← eval₂_map, eval₂_hom, ← ring_hom.map_zero (algebra_map B C)] at hp,
+  rw [aeval_def, eval₂_eq_eval_map],
+  exact H hp,
+end
+
+lemma front_int (A B C : Type*) [comm_ring A] [comm_ring B] [comm_ring C]
+  [algebra A B] [algebra B C] [algebra A C] [is_algebra_tower A B C]
+  : (∀ x : C, is_integral A x) → (∀ x : C, is_integral B x) :=
+begin
+  intros h x,
+  specialize h x,
+  cases h with p hp,
+  refine ⟨p.map (algebra_map A B), ⟨monic_map (algebra_map A B) hp.left, _⟩⟩,
+  replace hp := hp.right,
+  rw [aeval_def, is_algebra_tower.algebra_map_eq A B C,
+    ← eval₂_map] at hp,
+  rw [aeval_def],
+  exact hp,
+end
+
+lemma mid_max {A B C : Type*} [comm_ring A] [integral_domain B] [integral_domain C] {m : ideal C}
+  [algebra A B] [algebra B C] [algebra A C] [is_algebra_tower A B C]
+  (hBC : function.injective (algebra_map B C))
+  (H : ∀ x : C, is_integral A x)
+  : is_maximal m → is_maximal (comap (algebra_map B C) m) :=
+begin
+  introsI h,
+  have h' : is_maximal (comap (algebra_map A C) m) :=
+    is_maximal_comap_of_is_integral_of_is_maximal H m h,
+  haveI : (comap (algebra_map B C) m).is_prime := comap_is_prime _ m,
+  rw is_algebra_tower.algebra_map_eq A B C at h',
+  refine is_maximal_of_is_integral_of_is_maximal_comap _ _ h',
+  refine back_int A B C hBC H,
+end
 
 end integral_domain
 

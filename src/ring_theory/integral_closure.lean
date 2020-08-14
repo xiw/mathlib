@@ -316,8 +316,53 @@ instance : integral_domain (integral_closure R S) :=
 end integral_domain
 
 section is_integral_hom
-variables {R S : Type*} [comm_ring R] [integral_domain S] [algebra R S]
+variables {R S : Type*} [comm_ring R] [integral_domain S] [algebra R S] {f : R →+* S}
 
 def is_integral_hom (f : R →+* S) := ∀ x : R, is_integral R (f x)
+
+lemma comap_is_maximal_of_of_is_integral_hom {I : ideal S} (hf : is_integral_hom f)
+  : I.is_maximal ↔ (I.comap f).is_maximal :=
+begin
+  sorry
+end
+
+-- TODO: if we can prove this, then we can push forward the maximality from the top-left
+lemma is_integral_hom_of_is_integral_hom_comp'' {T : Type*} [integral_domain T] [algebra R T] [algebra S T]
+  {f : R →+* S} (h : is_integral_hom ((algebra_map S T).comp f)) : is_integral_hom f :=
+begin
+  intro x,
+  specialize h x,
+  cases h with p hp,
+  use p,
+  refine ⟨hp.left, _⟩,
+  replace hp := hp.right,
+  rw aeval_def at ⊢ hp,
+  sorry,
+end
+
+lemma is_integral_hom_of_is_integral_hom_comp {T : Type*} [integral_domain T] [algebra R T] [algebra S T]
+  {f : R →+* S} {g : S →+* T} (h : is_integral_hom (g.comp f)) : is_integral_hom f :=
+begin
+  intro x,
+  specialize h x,
+  cases h with p hp,
+  use p,
+  refine ⟨hp.left, _⟩,
+  replace hp := hp.right,
+  rw aeval_def at ⊢ hp,
+  -- erw eval₂_hom (g.comp f) at hp,
+  rw ← sum_C_mul_X_eq p at ⊢ hp,
+  simp at ⊢ hp,
+  erw eval₂_sum at ⊢ hp,
+
+end
+
+lemma is_integral_hom_of_is_integral_hom_comp' {T : Type*} [integral_domain T] [algebra R T] [algebra S T]
+  {f : R →+* S} {g : S →+* T} (h : is_integral_hom (g.comp f)) : is_integral_hom g :=
+begin
+  intro x,
+  rw is_integral_iff_is_integral_closure_finite,
+  sorry,
+end
 
 end is_integral_hom

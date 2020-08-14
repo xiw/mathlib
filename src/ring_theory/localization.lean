@@ -1022,14 +1022,17 @@ section le_non_zero_divisors
 
 variables {K : Type*}
 
-lemma le_non_zero_divisors [integral_domain K] {M : submonoid K} (hM : ↑0 ∉ M)
-  : M ≤ non_zero_divisors K :=
+@[class]
+def le_non_zero_divisors [comm_ring K] (M : submonoid K) := M ≤ non_zero_divisors K
+
+lemma le_non_zero_divisors_of_domain [integral_domain K] {M : submonoid K} (hM : ↑0 ∉ M)
+  : le_non_zero_divisors M :=
 λ x hx y hy, or.rec_on (eq_zero_or_eq_zero_of_mul_eq_zero hy)
   (λ h, h) (λ h, absurd (h ▸ hx : (0 : K) ∈ M) hM)
 
 -- TODO: A lot of the lemmas below can probably be generalized in this sort of way
 lemma to_map_eq_zero_iff_of_le_non_zero_divisors (f : localization_map M S) {x : R}
-  (hM : M ≤ non_zero_divisors R) : x = 0 ↔ f.to_map x = 0 :=
+  [hM : le_non_zero_divisors M] : x = 0 ↔ f.to_map x = 0 :=
 begin
   rw ← f.to_map.map_zero,
   split; intro h,
@@ -1040,7 +1043,7 @@ begin
 end
 
 lemma to_map_injective_of_le_non_zero_divisors (f : localization_map M S)
-  (hM : M ≤ (non_zero_divisors R)) : injective f.to_map :=
+  [hM : le_non_zero_divisors M] : injective f.to_map :=
 begin
   rw ring_hom.injective_iff f.to_map,
   intros a ha,
@@ -1051,7 +1054,7 @@ begin
 end
 
 lemma is_integral_domain_of_le_non_zero_divisors {M : submonoid A} (f : localization_map M S)
-  (hM : M ≤ (non_zero_divisors A)) : is_integral_domain S :=
+  [hM : le_non_zero_divisors M] : is_integral_domain S :=
 { eq_zero_or_eq_zero_of_mul_eq_zero :=
     begin
       intros z w h,
@@ -1062,19 +1065,21 @@ lemma is_integral_domain_of_le_non_zero_divisors {M : submonoid A} (f : localiza
       erw h at this,
       rw [zero_mul, zero_mul, ← f.to_map.map_mul] at this,
       replace this := this.symm,
-      rw ← to_map_eq_zero_iff_of_le_non_zero_divisors f hM at this,
+      rw ← to_map_eq_zero_iff_of_le_non_zero_divisors f at this,
       cases eq_zero_or_eq_zero_of_mul_eq_zero this with H H,
       { exact or.inl (f.eq_zero_of_fst_eq_zero hx H) },
       { exact or.inr (f.eq_zero_of_fst_eq_zero hy H) },
     end,
-  exists_pair_ne := ⟨f.to_map 0, f.to_map 1, λ h, zero_ne_one (to_map_injective_of_le_non_zero_divisors f hM h)⟩,
+  exists_pair_ne := ⟨f.to_map 0, f.to_map 1, λ h, zero_ne_one (to_map_injective_of_le_non_zero_divisors f h)⟩,
   ..(infer_instance : comm_ring S) }
 
-def to_integral_domain_of_le_non_zero_divisors {M : submonoid A} (f : localization_map M S)
-  (hM : M ≤ (non_zero_divisors A)) : integral_domain S :=
+@[priority 100]
+instance integral_domain_localization {M : submonoid A} [hM : le_non_zero_divisors M]
+  : integral_domain (localization M) :=
 { eq_zero_or_eq_zero_of_mul_eq_zero :=
     begin
       intros z w h,
+      let f := localization.of M,
       cases f.surj z with x hx,
       cases f.surj w with y hy,
       have : z * w * f.to_map y.2 * f.to_map x.2 = f.to_map x.1 * f.to_map y.1, by
@@ -1082,13 +1087,14 @@ def to_integral_domain_of_le_non_zero_divisors {M : submonoid A} (f : localizati
       erw h at this,
       rw [zero_mul, zero_mul, ← f.to_map.map_mul] at this,
       replace this := this.symm,
-      rw ← to_map_eq_zero_iff_of_le_non_zero_divisors f hM at this,
+      rw ← to_map_eq_zero_iff_of_le_non_zero_divisors f at this,
       cases eq_zero_or_eq_zero_of_mul_eq_zero this with H H,
       { exact or.inl (f.eq_zero_of_fst_eq_zero hx H) },
       { exact or.inr (f.eq_zero_of_fst_eq_zero hy H) },
     end,
-  exists_pair_ne := ⟨f.to_map 0, f.to_map 1, λ h, zero_ne_one (to_map_injective_of_le_non_zero_divisors f hM h)⟩,
-  ..(infer_instance : comm_ring S) }
+  exists_pair_ne := ⟨(localization.of M).to_map 0, (localization.of M).to_map 1, λ h,
+    zero_ne_one (to_map_injective_of_le_non_zero_divisors (localization.of M) h)⟩,
+  ..(infer_instance : comm_ring (localization M)) }
 
 end le_non_zero_divisors
 
