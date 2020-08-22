@@ -32,20 +32,28 @@ end
 lemma unit_of_unitary {A : matrix n n ℂ} (hu : A.unitary) : is_unit A :=
   (matrix.is_unit_iff_is_unit_det A).mpr (unit_det_of_unitary hu)
 
-lemma unitary_inv {A : matrix n n ℂ} (hu : A.unitary) : A.conjugate_transpose = A⁻¹ :=
+lemma unitary_inv {A : matrix n n ℂ} (hu : A.unitary) : A⁻¹ = A.conjugate_transpose :=
 begin
   unfold unitary at hu,
-  rw [← mul_one A⁻¹, ← hu], rw [mul_eq_mul, ← matrix.mul_assoc],
-  sorry
+  calc A⁻¹ = A⁻¹ ⬝ 1 : by simp
+  ... = A⁻¹ ⬝ (A ⬝ A.conjugate_transpose) : by rw ← hu
+  ... = (A⁻¹ ⬝ A) ⬝ A.conjugate_transpose : by simp[matrix.mul_assoc]
+  ... = 1 ⬝ A.conjugate_transpose : by rw ← nonsing_inv_mul A (unit_det_of_unitary hu)
+  ... = A.conjugate_transpose : by simp,
 end
 
-lemma unit_of_conjugate_transpose {A : matrix n n ℂ} (hu : A.unitary) : is_unit A.conjugate_transpose :=
+
+lemma unitary_of_complex_transpose {A : matrix n n ℂ} (hu : A.unitary) : A.conjugate_transpose.unitary :=
 begin
-  have hunit := unit_of_unitary hu,
-  refine unit_of_unitary _,
-  unfold unitary,
-  rw [conjugate_transpose_transpose, unitary_inv hu, ← mul_eq_mul],
-  sorry
+  calc A.conjugate_transpose ⬝ A.conjugate_transpose.conjugate_transpose = A.conjugate_transpose ⬝ A : by rw conjugate_transpose_transpose A
+       ... = A⁻¹ ⬝ A : by rw unitary_inv hu
+       ... = 1 : by rw ← nonsing_inv_mul A (unit_det_of_unitary hu),
+  end
+
+
+lemma unit_of_complex_transpose {A : matrix n n ℂ} (hu : A.unitary) : is_unit A.conjugate_transpose :=
+begin
+  exact unit_of_unitary (unitary_of_complex_transpose hu),
 end
 
 lemma unitary.has_mul {A B : matrix n n ℂ} (hA : A.unitary) (hB : B.unitary) :
@@ -56,8 +64,8 @@ begin
 end
 
 lemma unitary.has_one : (1 : matrix n n ℂ).unitary := by simp [matrix.unitary]
-
 include n
+
 instance unitary_group : group $ subtype $ unitary :=
 { mul := begin
   rintros ⟨A, hA⟩ ⟨B, hB⟩, refine ⟨A ⬝ B, _⟩, exact n, apply_instance, apply unitary.has_mul; assumption,
@@ -69,12 +77,37 @@ end,
   inv := sorry,
   mul_left_inv := sorry }
 
+#check ite
 theorem rows_of_unitary {A : matrix n n ℂ} :
   A.unitary ↔
   ∀ i j : n,
   (vector.complex_dot_product (A i) (A i) = 1) ∧
-  i ≠ j → (vector.complex_dot_product (A i) (A j) = 0)
-:= sorry
+  (i ≠ j → (vector.complex_dot_product (A i) (A j) = 0))
+:=
+begin
+  unfold matrix.unitary,
+  rw ← ext_iff,
+  unfold matrix.mul,
+  unfold matrix.conjugate_transpose,
+  unfold conj,
+  unfold transpose,
+  unfold vector.complex_dot_product,
+  unfold vector.conj,
+  split,
+  intros hu i j,
+  simp [hu],
+  exact one_apply_ne, -- Why is this needed? This is already a simp lemma
+  intros hu i j,
+  specialize hu i j,
+  cases hu with hp hq,
+  by_cases h : i = j,
+  rw ← h,
+  rw one_apply_eq,
+  simp [hp],
+  rw one_apply_ne h,
+  apply hq,
+  exact h,
+end
 
 lemma extension_unitary_of_unitary {k : ℕ} (A : matrix (fin k) (fin k) ℂ) (a : ℝ):
   A.unitary → (A.extension a).unitary :=
