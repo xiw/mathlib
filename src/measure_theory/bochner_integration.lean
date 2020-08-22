@@ -1084,25 +1084,14 @@ lemma tendsto_integral_filter_of_dominated_convergence {ι} {l : filter ι}
   tendsto (λn, ∫ a, F n a ∂μ) l (𝓝 $ ∫ a, f a ∂μ) :=
 begin
   rw hl_cb.tendsto_iff_seq_tendsto,
-  { intros x xl,
-    have hxl, { rw tendsto_at_top' at xl, exact xl },
-    have h := inter_mem_sets hF_meas h_bound,
-    replace h := hxl _ h,
-    rcases h with ⟨k, h⟩,
-    rw ← tendsto_add_at_top_iff_nat k,
-    refine tendsto_integral_of_dominated_convergence _ _ _ _ _ _,
-    { exact bound },
-    { intro, refine (h _ _).1, exact nat.le_add_left _ _ },
-    { assumption },
-    { assumption },
-    { intro, refine (h _ _).2, exact nat.le_add_left _ _ },
-    { filter_upwards [h_lim],
-      simp only [mem_set_of_eq],
-      assume a h_lim,
-      apply @tendsto.comp _ _ _ (λn, x (n + k)) (λn, F n a),
-      { assumption },
-      rw tendsto_add_at_top_iff_nat,
-      assumption } },
+  intros x xl,
+  obtain ⟨k, h⟩ : ∃ k, ∀ n ≥ k, measurable (F $ x n) ∧ ∀ᵐ (a : α) ∂μ, ∥F (x n) a∥ ≤ bound a,
+    from (tendsto_at_top' _ _).mp xl _ (inter_mem_sets hF_meas h_bound),
+  rw ← tendsto_add_at_top_iff_nat k,
+  apply tendsto_integral_of_dominated_convergence bound _ ‹_› ‹_›,
+  { exact λ _, (h _ $ nat.le_add_left _ _).2 },
+  { exact h_lim.mono (λ a h_lim, h_lim.comp $ (tendsto_add_at_top_iff_nat k).mpr xl) },
+  { exact λ _, (h _ $ nat.le_add_left _ _).1 }
 end
 
 /-- The Bochner integral of a real-valued function `f : α → ℝ` is the difference between the
