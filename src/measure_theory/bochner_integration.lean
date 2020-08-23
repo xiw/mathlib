@@ -1074,7 +1074,7 @@ end
 
 /-- Lebesgue dominated convergence theorem for filters with a countable basis -/
 lemma tendsto_integral_filter_of_dominated_convergence {ι} {l : filter ι}
-  {F : ι → α → E} {f : α → E} (bound : α → ℝ)
+  {F : ι → α → E} {f : α → E} {bound : α → ℝ}
   (hl_cb : l.is_countably_generated)
   (hF_meas : ∀ᶠ n in l, measurable (F n))
   (f_measurable : measurable f)
