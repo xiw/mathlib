@@ -1,4 +1,5 @@
 import measure_theory.interval_integral
+import measure_theory.clm
 import analysis.calculus.mean_value
 
 open topological_space measure_theory filter first_countable_topology metric
@@ -159,6 +160,7 @@ calc ∥v∥ = ∥u - (u - v)∥ : by abel
 
 end
 
+
 /-! # Real normed space -/
 section
 variables {E : Type*} [normed_group E] [normed_space ℝ E]
@@ -191,7 +193,46 @@ begin
   ... = C * ∥x∥ : by { rw norm_smul, field_simp [hδ], ring },
   exact hf _ δx_in
 end
-variables (v : E)
+
+lemma op_norm_eq_of_bounds {φ : E →L[𝕜] F} {M : ℝ} (M_nonneg : 0 ≤ M)
+  (h_above : ∀ x, ∥φ x∥ ≤ M*∥x∥) (h_below : ∀ N ≥ 0, (∀ x, ∥φ x∥ ≤ N*∥x∥) → M ≤ N) :
+  ∥φ∥ = M :=
+le_antisymm (φ.op_norm_le_bound M_nonneg h_above)
+  ((le_cInf_iff continuous_linear_map.bounds_bdd_below ⟨M, M_nonneg, h_above⟩).mpr $
+   λ N ⟨N_nonneg, hN⟩, h_below N N_nonneg hN)
+
+
+@[simp]
+lemma continuous_linear_map.norm_smul_right_apply (c : E →L[𝕜] 𝕜) (f : F) : ∥c.smul_right f∥ = ∥c∥ * ∥f∥ :=
+begin
+  by_cases hf : f = 0,
+  { simp [hf] },
+  replace hf : 0 < ∥f∥ := norm_pos_iff.mpr hf,
+  apply op_norm_eq_of_bounds (mul_nonneg (norm_nonneg _) (norm_nonneg _))
+        (λ e, calc  ∥c.smul_right f e∥  = ∥c e∥ * ∥f∥ : by simp [norm_smul]
+            ... ≤ ∥c∥ * ∥e∥ * ∥f∥ : mul_le_mul_of_nonneg_right (c.le_op_norm e) (norm_nonneg _)
+            ... = ∥c∥*∥f∥*∥e∥  : by ring),
+  intros N N_nonneg hN,
+  suffices : ∥c∥ ≤ N/∥f∥, by rwa ← le_div_iff hf,
+  apply c.op_norm_le_bound (div_nonneg N_nonneg $ norm_nonneg _),
+  intros x,
+  rw [div_mul_eq_mul_div, le_div_iff hf],
+  simpa [norm_smul] using hN x
+end
+
+def continuous_linear_map.smul_rightₗ (c : E →L[𝕜] 𝕜) : F →ₗ[𝕜] (E →L[𝕜] F) :=
+{ to_fun := c.smul_right,
+  map_add' := λ x y, by { ext e, simp [smul_add] },
+  map_smul' := λ a x, by { ext e, simp [smul_comm] } }
+
+noncomputable
+def continuous_linear_map.smul_rightL (c : E →L[𝕜] 𝕜) : F →L[𝕜] (E →L[𝕜] F) :=
+(c.smul_rightₗ : F →ₗ[𝕜] (E →L[𝕜] F)).mk_continuous _ (λ f, le_of_eq $ c.norm_smul_right_apply f)
+
+@[simp]
+lemma continuous_linear_map.norm_smul_right (c : E →L[𝕜] 𝕜) (hF : 0 < vector_space.dim 𝕜 F) :
+  ∥(c.smul_rightL : F →L[𝕜] (E →L[𝕜] F))∥ = ∥c∥ :=
+continuous_linear_map.homothety_norm hF _ (norm_nonneg _) c.norm_smul_right_apply
 
 variables (𝕜 F)
 
@@ -214,11 +255,6 @@ noncomputable def continuous_linear_map.apply (v : E) : (E →L[𝕜] F) →L[�
 ⟨continuous_linear_map.applyₗ 𝕜 F v, continuous_linear_map.continuous_apply _ _ _⟩
 
 variables {𝕜 F}
-
-lemma continuous_linear_map.map_sum (L : E →L[𝕜] F) {ι : Type*} (s : finset ι) (g : ι → E) :
-L (∑ i in s, g i) = ∑ i in s, L (g i) :=
-sorry
-
 
 lemma has_fderiv_at.le_of_lip {f : E → F} {f' : E →L[𝕜] F} {x₀ : E} (hf: has_fderiv_at f f' x₀)
   {s : set E} (he : s ∈ 𝓝 x₀) {C : ℝ≥0} (hlip : lipschitz_on_with C s f) : ∥f'∥ ≤ C :=
@@ -248,23 +284,8 @@ end
 
 
 end
-/-! # const_mul -/
 
 variables {α : Type*} [measurable_space α] {μ : measure α}
-
--- borel_space.lean, next to measurable.const_smul
-lemma measurable.const_mul {f : α → ℝ} (h : measurable f) (c : ℝ) : measurable (λ x, c*f x) :=
-(measurable.const_smul h c : _)
-
-namespace measure_theory
--- l1_space.lean, next to integrable.smul
-lemma integrable.const_mul {f : α → ℝ} (h : integrable f μ) (c : ℝ) : integrable (λ x, c*f x) μ :=
-(integrable.smul c h : _)
-
-lemma integrable.mul_const {f : α → ℝ} (h : integrable f μ) (c : ℝ) : integrable (λ x, f x * c) μ :=
-by simp_rw [mul_comm, h.const_mul _]
-end measure_theory
-
 
 
 section
@@ -280,62 +301,7 @@ local infixr ` →ₛ `:25 := simple_func
 
 open_locale big_operators
 
-noncomputable
-def l1.map (φ : α →₁[μ] E) (L : E →L[ℝ] F) : α →₁[μ] F :=
-{ val := ae_eq_fun.mk (λ a, L (φ a)) (measurable.comp L.continuous.measurable φ.measurable),
-  property := begin
-    sorry
-  end }
 
-lemma continuous_linear_map.integral_applyₛ (L : E →L[ℝ] F) (φ : α →ₛ E)
-  (φ_int : integrable φ μ)
-  : (simple_func.map ⇑L φ).integral μ = L (φ.integral μ) :=
-by simpa only [← continuous_linear_map.map_smul _ L, ← L.map_sum φ.range] using
-       φ.map_integral L φ_int (L.map_zero)
-
-lemma continuous_linear_map.integral_apply₁ₛ (L : E →L[ℝ] F) (φ : α →₁ₛ[μ] E) :
-  (l1.map (φ : α →₁[μ] E) L).integral = L ((φ : α →₁[μ] E)).integral :=
-begin
-  rcases φ with ⟨f, ⟨s, hs⟩⟩,
-
-end
-
-/- lemma continuous_linear_map.integral_applyₛ {φ : α →ₛ E} (L : E →L[ℝ] F) (φ_meas : measurable φ)
-  (φ_int : integrable φ μ) : ∫ a, L (φ a) ∂μ = L (∫ a, φ a ∂μ) :=
-begin
-  have : simple_func.integral μ (simple_func.map ⇑L φ) = L (simple_func.integral μ φ),
-    by simpa only [← continuous_linear_map.map_smul _ L, ← L.map_sum φ.range] using
-       φ.map_integral L φ_int (L.map_zero),
-  convert this ; clear this,
-  sorry,
-  rw integral_eq φ φ_meas φ_int,
-  rw measure_theory.simple_func.integral_eq_integral _ φ_int,
-  simp,
-
-
-end -/
-
-variables (φ : α →₁[μ] E) (a : α)(L : E →L[ℝ] F)
-
-
-lemma continuous_linear_map.integral_apply₁ (φ : α →₁[μ] E) (L : E →L[ℝ] F) :
-  l1.integral (l1.map φ L) = L (l1.integral φ) :=
-begin
-  refine @is_closed_property _ _ _ (coe : (α →₁ₛ[μ] E) → (α →₁[μ] E))
-    (λ φ : α →₁[μ] E, (l1.map φ L).integral = L φ.integral)
-    l1.simple_func.dense_range (is_closed_eq _ _) (continuous_linear_map.integral_apply₁ₛ L) φ,
-  sorry,
-  apply L.continuous.comp,
-
-end
-
-lemma continuous_linear_map.integral_apply {φ : α → E} (L : E →L[ℝ] F) (φ_meas : measurable φ)
-  (φ_meas : integrable φ μ) : ∫ a, L (φ a) ∂μ = L (∫ a, φ a ∂μ) :=
-begin
-
-  sorry
-end
-#exit
 end
 
 /-! # Integral with parameters -/
@@ -541,7 +507,7 @@ end
 
 lemma continuous_linear_map.apply_integral {φ : α → H →L[ℝ] E} (φ_meas : measurable φ)
   (φ_int : integrable φ μ) (v : H) : ∫ a, φ a v ∂μ = (∫ a, φ a ∂μ) v :=
-(continuous_linear_map.apply ℝ E v).integral_apply φ_meas φ_int
+(continuous_linear_map.apply ℝ E v).integral_apply_comm φ_meas φ_int
 
 lemma measurable_abs : measurable (abs : ℝ → ℝ) :=
 real.continuous_abs.measurable
