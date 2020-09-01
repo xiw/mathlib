@@ -2,6 +2,8 @@ import measure_theory.interval_integral
 import measure_theory.clm
 import analysis.calculus.mean_value
 
+noncomputable theory
+
 open topological_space measure_theory filter first_countable_topology metric
 open_locale topological_space filter nnreal big_operators
 
@@ -287,22 +289,6 @@ end
 
 variables {α : Type*} [measurable_space α] {μ : measure α}
 
-
-section
-variables {E : Type*} [normed_group E] [second_countable_topology E] [normed_space ℝ E]
-  [complete_space E] [measurable_space E] [borel_space E]
-
-variables {F : Type*} [normed_group F] [second_countable_topology F] [normed_space ℝ F]
-  [complete_space F] [measurable_space F] [borel_space F]
-
---lemma integral_add {f g : α →ₛ E} (hf : integrable f μ) (hg : integrable g μ) :
-
-local infixr ` →ₛ `:25 := simple_func
-
-open_locale big_operators
-
-
-end
 
 /-! # Integral with parameters -/
 
@@ -606,4 +592,29 @@ begin
     rwa [has_fderiv_at_iff_tendsto, this] at ha },
 end
 
+
+instance : measurable_space (ℝ →L[ℝ] E) := borel _
+instance : borel_space (ℝ →L[ℝ] E) := ⟨rfl⟩
+
+instance : second_countable_topology (ℝ →L[ℝ] E) := sorry
+
+lemma has_deriv_at_of_dominated_loc_of_lip'' {F : ℝ → α → E} {F' : α → E} {x₀ : ℝ} {bound : α → ℝ}
+  {ε : ℝ} (ε_pos : 0 < ε)
+  (hF_meas : ∀ x ∈ ball x₀ ε, measurable (F x))
+  (hF_int : integrable (F x₀) μ)
+  (hF'_meas : measurable F')
+  (h_lipsch : ∀ᵐ a ∂μ, lipschitz_on_with (nnreal.abs $ bound a) (ball x₀ ε) (λ x, F x a))
+  (bound_measurable : measurable (bound : α → ℝ))
+  (bound_integrable : integrable (bound : α → ℝ) μ)
+  (h_diff : ∀ᵐ a ∂μ, has_deriv_at (λ x, F x a) (F' a) x₀) :
+  has_deriv_at (λ x, ∫ a, F x a ∂μ) (∫ a, F' a ∂μ) x₀ :=
+begin
+  simp_rw has_deriv_at_iff_has_fderiv_at at h_diff ⊢,
+  have := ((1 : ℝ →L[ℝ] ℝ).smul_rightL : E →L[ℝ] _).integral_apply_comm hF'_meas sorry,
+  change has_fderiv_at (λ (x : ℝ), integral μ (F x)) ((1 : ℝ →L[ℝ] ℝ).smul_rightL (∫ a, F' a ∂μ)) x₀,
+  rw ← this,
+  exact has_fderiv_at_of_dominated_of_lip ε_pos hF_meas hF_int
+    ((1 : ℝ →L[ℝ] ℝ).smul_rightL.continuous.measurable.comp hF'_meas) h_lipsch
+    bound_measurable bound_integrable h_diff
+end
 end
