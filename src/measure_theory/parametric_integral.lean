@@ -2,7 +2,7 @@ import measure_theory.interval_integral
 import analysis.calculus.mean_value
 
 open topological_space measure_theory filter first_countable_topology metric
-open_locale topological_space filter nnreal
+open_locale topological_space filter nnreal big_operators
 
 
 /-! # Ordered field -/
@@ -18,6 +18,20 @@ lemma inv_mul_le_iff' {α : Type*} [linear_ordered_field α] {a b c : α} (h : 0
 by rw [inv_mul_le_iff h, mul_comm]
 
 end ordered_field
+
+/-! # linear map -/
+
+section
+
+variables (R M₂ : Type*) { M: Type*} [comm_ring R] [add_comm_monoid M] [semimodule R M]
+          [add_comm_monoid M₂] [semimodule R M₂]
+
+def linear_map.applyₗ (v : M) : (M →ₗ[R] M₂) →ₗ[R] M₂ :=
+{ to_fun := λ f, f v,
+  map_add' := λ f g, f.add_apply g v,
+  map_smul' := λ x f, f.smul_apply x v }
+
+end
 
 /-! # Lipschitz -/
 
@@ -116,7 +130,124 @@ lemma is_countably_generated_nhds_within {X : Type*} [topological_space X] [firs
 
 end first_countable
 
+/-! # Normed groups -/
 
+section
+variables {E : Type*} [normed_group E] {F : Type*} [normed_group F]
+
+lemma normed_space.tendsto_nhds_nhds {f : E → F} {x : E} {y : F} :
+  tendsto f (𝓝 x) (𝓝 y) ↔ ∀ ε > 0, ∃ δ > 0, ∀ x', ∥x' - x∥ < δ → ∥f x' - y∥ < ε :=
+by simp_rw [metric.tendsto_nhds_nhds, dist_eq_norm]
+
+lemma lipschitz_on_with_iff_norm_sub_le {f : E → F} {C : ℝ≥0} {s : set E} :
+  lipschitz_on_with C s f ↔  ∀ {x y : E}, x ∈ s → y ∈ s →  ∥f x - f y∥ ≤ C * ∥x - y∥ :=
+by simp only [lipschitz_on_with_iff_dist_le_mul, dist_eq_norm]
+
+lemma lipschitz_on_with.norm_sub_le {f : E → F} {C : ℝ≥0} {s : set E} (h : lipschitz_on_with C s f)
+{x y : E} (x_in : x ∈ s) (y_in : y ∈ s) : ∥f x - f y∥ ≤ C * ∥x - y∥ :=
+lipschitz_on_with_iff_norm_sub_le.mp h x_in y_in
+
+lemma eq_of_norm_sub_eq_zero {u v : E} (h : ∥u - v∥ = 0) : u = v :=
+begin
+  apply eq_of_dist_eq_zero,
+  rwa dist_eq_norm
+end
+
+lemma norm_le_insert (u v : E) : ∥v∥ ≤ ∥u∥ + ∥u - v∥ :=
+calc ∥v∥ = ∥u - (u - v)∥ : by abel
+... ≤ ∥u∥ + ∥u - v∥ : norm_sub_le u _
+
+end
+
+/-! # Real normed space -/
+section
+variables {E : Type*} [normed_group E] [normed_space ℝ E]
+lemma mul_norm_of_nonneg {t : ℝ} (ht : 0 ≤ t) (x : E) : t*∥x∥ = ∥t • x∥ :=
+by rw [norm_smul, real.norm_eq_abs, abs_of_nonneg ht]
+
+end
+
+/-! # Calculus -/
+
+section
+variables {𝕜 : Type*} [nondiscrete_normed_field 𝕜]
+          {E : Type*} [normed_group E] [normed_space 𝕜 E]
+          {F : Type*} [normed_group F] [normed_space 𝕜 F]
+
+lemma op_norm_le_of_ball {f : E →L[𝕜] F} {ε : ℝ} {C : ℝ} (ε_pos : 0 < ε) (hC : 0 ≤ C)
+  (hf : ∀ x ∈ ball (0 : E) ε, ∥f x∥ ≤ C * ∥x∥ ) : ∥f∥ ≤ C :=
+begin
+  apply f.op_norm_le_bound hC,
+  intros x,
+  rcases normed_field.exists_one_lt_norm 𝕜 with ⟨c, hc⟩,
+  by_cases hx : x = 0, { simp [hx] },
+  rcases rescale_to_shell hc (half_pos ε_pos) hx with ⟨δ, hδ, δxle, leδx, δinv⟩,
+  have δx_in : δ • x ∈ ball (0 : E) ε,
+  { rw [mem_ball, dist_eq_norm, sub_zero],
+    linarith },
+  calc ∥f x∥ = ∥f ((1/δ) • δ • x)∥ : by simp [hδ, smul_smul]
+  ... = ∥1/δ∥ * ∥f (δ • x)∥ : by simp [norm_smul]
+  ... ≤ ∥1/δ∥ * (C*∥δ • x∥) : mul_le_mul_of_nonneg_left _ (norm_nonneg _)
+  ... = C * ∥x∥ : by { rw norm_smul, field_simp [hδ], ring },
+  exact hf _ δx_in
+end
+variables (v : E)
+
+variables (𝕜 F)
+
+/-- The linear map obtained by applying a continuous linear map at a given vector. -/
+def continuous_linear_map.applyₗ (v : E) : (E →L[𝕜] F) →ₗ[𝕜] F :=
+{ to_fun := λ f, f v,
+  map_add' := λ f g, f.add_apply g v,
+  map_smul' := λ x f, f.smul_apply x v }
+
+lemma continuous_linear_map.continuous_apply (v : E) : continuous (continuous_linear_map.applyₗ 𝕜 F v) :=
+begin
+  apply (continuous_linear_map.applyₗ 𝕜 F v).continuous_of_bound,
+  intro f,
+  rw mul_comm,
+  exact f.le_op_norm v,
+end
+
+/-- The continuous linear map obtained by applying a continuous linear map at a given vector. -/
+noncomputable def continuous_linear_map.apply (v : E) : (E →L[𝕜] F) →L[𝕜] F :=
+⟨continuous_linear_map.applyₗ 𝕜 F v, continuous_linear_map.continuous_apply _ _ _⟩
+
+variables {𝕜 F}
+
+lemma continuous_linear_map.map_sum (L : E →L[𝕜] F) {ι : Type*} (s : finset ι) (g : ι → E) :
+L (∑ i in s, g i) = ∑ i in s, L (g i) :=
+sorry
+
+
+lemma has_fderiv_at.le_of_lip {f : E → F} {f' : E →L[𝕜] F} {x₀ : E} (hf: has_fderiv_at f f' x₀)
+  {s : set E} (he : s ∈ 𝓝 x₀) {C : ℝ≥0} (hlip : lipschitz_on_with C s f) : ∥f'∥ ≤ C :=
+begin
+  replace hf : ∀ ε > 0, ∃ δ > 0, ∀ x', ∥x' - x₀∥ < δ → ∥x' - x₀∥⁻¹ * ∥f x' - f x₀ - f' (x' - x₀)∥ < ε,
+    by simpa [has_fderiv_at_iff_tendsto, normed_space.tendsto_nhds_nhds] using hf,
+  obtain ⟨ε, ε_pos, hε⟩ : ∃ ε > 0, ball x₀ ε ⊆ s := mem_nhds_iff.mp he,
+  apply real.le_of_forall_epsilon_le,
+  intros η η_pos,
+  rcases hf η η_pos with ⟨δ, δ_pos, h⟩, clear hf,
+  apply op_norm_le_of_ball (lt_min ε_pos δ_pos) (by linarith [C.coe_nonneg]: (0 : ℝ) ≤ C + η),
+  intros u u_in,
+  let x := x₀ + u,
+  rw show u = x - x₀, by rw [add_sub_cancel'],
+  have xε : x ∈ ball x₀ ε,
+    by simpa [dist_eq_norm] using ball_subset_ball (min_le_left ε δ) u_in,
+  have xδ : ∥x - x₀∥ < δ,
+    by simpa [dist_eq_norm] using ball_subset_ball (min_le_right ε δ) u_in,
+  replace h : ∥f x - f x₀ - f' (x - x₀)∥ ≤ η*∥x - x₀∥,
+  { by_cases H : x - x₀ = 0,
+    { simp [eq_of_sub_eq_zero H] },
+    { exact (inv_mul_le_iff' $ norm_pos_iff.mpr H).mp (le_of_lt $ h x xδ) } },
+  have := hlip.norm_sub_le (hε xε) (hε $ mem_ball_self ε_pos),
+  calc ∥f' (x - x₀)∥ ≤ ∥f x - f x₀∥ + ∥f x - f x₀ - f' (x - x₀)∥ : norm_le_insert _ _
+  ... ≤ (C + η) * ∥x - x₀∥ : by linarith,
+end
+
+
+end
 /-! # const_mul -/
 
 variables {α : Type*} [measurable_space α] {μ : measure α}
@@ -125,9 +256,87 @@ variables {α : Type*} [measurable_space α] {μ : measure α}
 lemma measurable.const_mul {f : α → ℝ} (h : measurable f) (c : ℝ) : measurable (λ x, c*f x) :=
 (measurable.const_smul h c : _)
 
+namespace measure_theory
 -- l1_space.lean, next to integrable.smul
 lemma integrable.const_mul {f : α → ℝ} (h : integrable f μ) (c : ℝ) : integrable (λ x, c*f x) μ :=
 (integrable.smul c h : _)
+
+lemma integrable.mul_const {f : α → ℝ} (h : integrable f μ) (c : ℝ) : integrable (λ x, f x * c) μ :=
+by simp_rw [mul_comm, h.const_mul _]
+end measure_theory
+
+
+
+section
+variables {E : Type*} [normed_group E] [second_countable_topology E] [normed_space ℝ E]
+  [complete_space E] [measurable_space E] [borel_space E]
+
+variables {F : Type*} [normed_group F] [second_countable_topology F] [normed_space ℝ F]
+  [complete_space F] [measurable_space F] [borel_space F]
+
+--lemma integral_add {f g : α →ₛ E} (hf : integrable f μ) (hg : integrable g μ) :
+
+local infixr ` →ₛ `:25 := simple_func
+
+open_locale big_operators
+
+noncomputable
+def l1.map (φ : α →₁[μ] E) (L : E →L[ℝ] F) : α →₁[μ] F :=
+{ val := ae_eq_fun.mk (λ a, L (φ a)) (measurable.comp L.continuous.measurable φ.measurable),
+  property := begin
+    sorry
+  end }
+
+lemma continuous_linear_map.integral_applyₛ (L : E →L[ℝ] F) (φ : α →ₛ E)
+  (φ_int : integrable φ μ)
+  : (simple_func.map ⇑L φ).integral μ = L (φ.integral μ) :=
+by simpa only [← continuous_linear_map.map_smul _ L, ← L.map_sum φ.range] using
+       φ.map_integral L φ_int (L.map_zero)
+
+lemma continuous_linear_map.integral_apply₁ₛ (L : E →L[ℝ] F) (φ : α →₁ₛ[μ] E) :
+  (l1.map (φ : α →₁[μ] E) L).integral = L ((φ : α →₁[μ] E)).integral :=
+begin
+  rcases φ with ⟨f, ⟨s, hs⟩⟩,
+
+end
+
+/- lemma continuous_linear_map.integral_applyₛ {φ : α →ₛ E} (L : E →L[ℝ] F) (φ_meas : measurable φ)
+  (φ_int : integrable φ μ) : ∫ a, L (φ a) ∂μ = L (∫ a, φ a ∂μ) :=
+begin
+  have : simple_func.integral μ (simple_func.map ⇑L φ) = L (simple_func.integral μ φ),
+    by simpa only [← continuous_linear_map.map_smul _ L, ← L.map_sum φ.range] using
+       φ.map_integral L φ_int (L.map_zero),
+  convert this ; clear this,
+  sorry,
+  rw integral_eq φ φ_meas φ_int,
+  rw measure_theory.simple_func.integral_eq_integral _ φ_int,
+  simp,
+
+
+end -/
+
+variables (φ : α →₁[μ] E) (a : α)(L : E →L[ℝ] F)
+
+
+lemma continuous_linear_map.integral_apply₁ (φ : α →₁[μ] E) (L : E →L[ℝ] F) :
+  l1.integral (l1.map φ L) = L (l1.integral φ) :=
+begin
+  refine @is_closed_property _ _ _ (coe : (α →₁ₛ[μ] E) → (α →₁[μ] E))
+    (λ φ : α →₁[μ] E, (l1.map φ L).integral = L φ.integral)
+    l1.simple_func.dense_range (is_closed_eq _ _) (continuous_linear_map.integral_apply₁ₛ L) φ,
+  sorry,
+  apply L.continuous.comp,
+
+end
+
+lemma continuous_linear_map.integral_apply {φ : α → E} (L : E →L[ℝ] F) (φ_meas : measurable φ)
+  (φ_meas : integrable φ μ) : ∫ a, L (φ a) ∂μ = L (∫ a, φ a ∂μ) :=
+begin
+
+  sorry
+end
+#exit
+end
 
 /-! # Integral with parameters -/
 
@@ -193,7 +402,7 @@ begin
       apply mul_le_mul_of_nonneg_right (le_of_lt x_in) (abs_nonneg  _) },
     apply integrable_of_norm_sub_le (hF_meas x₀ x₀_in) hF_int _ _ this,
     exact measurable.const_mul (measurable_norm.comp bound_measurable) ε,
-    apply integrable.const_mul bound_integrable.norm },
+    apply bound_integrable.norm.const_mul },
   have h_ball' : ((ball x₀ ε) \ {x₀})  ∈ 𝓝[{x₀}ᶜ] x₀ :=
     diff_mem_nhds_within_compl (ball_mem_nhds x₀ ε_pos) _,
   have h_ball: ball x₀ ε ∈ 𝓝[{x₀}ᶜ] x₀ :=
@@ -311,21 +520,124 @@ begin
         bound_measurable bound_integrable diff_x₀
 end
 
-#exit
 
-variables {H : Type*} [normed_group H] [normed_space ℝ H]
+variables {H : Type*} [normed_group H] [normed_space ℝ H] [measurable_space H]
+
   [second_countable_topology $ H →L[ℝ] E] [measurable_space $ H →L[ℝ] E]
   [borel_space $ H →L[ℝ] E]
 
-lemma has_fderiv_at_of_dominated {F : H → α → E} {F' : H → α → (H →L[ℝ] E)} {x₀ : H} {bound : α → ℝ}
-  (hF_meas : ∀ᶠ x in 𝓝 x₀, measurable (F x))
-  (hF_int : ∀ᶠ x in 𝓝 x₀, integrable (F x) μ)
-  (hF'_meas : ∀ᶠ x in 𝓝 x₀, measurable (F' x))
-  (h_bound : ∀ᶠ x in 𝓝 x₀, ∀ᵐ a ∂μ, ∥F' x a∥ ≤ bound a)
-  (bound_integrable : integrable bound μ)
-  (h_diff : ∀ᵐ a ∂μ, has_fderiv_at (λ x, F x a) (F' x₀ a) x₀) :
-  has_fderiv_at (λn, ∫ a, F n a ∂μ) (∫ a, F' x₀ a ∂μ) x₀ :=
-begin
+lemma measurable.apply_continuous_linear_map {φ : α → H →L[ℝ] E} (hφ : measurable φ) (v : H) :
+  measurable (λ a, φ a v) :=
+(continuous_linear_map.continuous_apply _ _ v).measurable.comp hφ
 
-  sorry
+lemma measure_theory.integrable.apply_continuous_linear_map {φ : α → H →L[ℝ] E}
+  (φ_meas : measurable φ) (φ_int : integrable φ μ) (v : H) : integrable (λ a, φ a v) μ :=
+begin
+  apply (φ_int.norm.mul_const _).mono',
+  apply eventually_of_forall,
+  intro a,
+  exact (φ a).le_op_norm v,
+end
+
+lemma continuous_linear_map.apply_integral {φ : α → H →L[ℝ] E} (φ_meas : measurable φ)
+  (φ_int : integrable φ μ) (v : H) : ∫ a, φ a v ∂μ = (∫ a, φ a ∂μ) v :=
+(continuous_linear_map.apply ℝ E v).integral_apply φ_meas φ_int
+
+lemma measurable_abs : measurable (abs : ℝ → ℝ) :=
+real.continuous_abs.measurable
+
+lemma has_fderiv_at_of_dominated_of_lip {F : H → α → E} {F' : α → (H →L[ℝ] E)} {x₀ : H}
+  {bound : α → ℝ}
+  {ε : ℝ}
+  (ε_pos : 0 < ε)
+  (hF_meas : ∀ x ∈ ball x₀ ε, measurable (F x))
+  (hF_int : integrable (F x₀) μ)
+  (hF'_meas : measurable F')
+  (h_lipsch : ∀ᵐ a ∂μ, lipschitz_on_with (nnreal.abs $ bound a) (ball x₀ ε) (λ x, F x a))
+  (bound_measurable : measurable (bound : α → ℝ))
+  (bound_integrable : integrable (bound : α → ℝ) μ)
+  (h_diff : ∀ᵐ a ∂μ, has_fderiv_at (λ x, F x a) (F' a) x₀) :
+  has_fderiv_at (λ x, ∫ a, F x a ∂μ) (∫ a, F' a ∂μ) x₀ :=
+begin
+  have x₀_in : x₀ ∈ ball x₀ ε := mem_ball_self ε_pos,
+  have nneg : ∀ x, 0 ≤ ∥x - x₀∥⁻¹ := λ x, inv_nonneg.mpr (norm_nonneg _) ,
+  set b : α → ℝ := λ a, abs (bound a),
+  have b_meas : measurable b :=  measurable_abs.comp bound_measurable,
+  have b_int : integrable b μ := bound_integrable.norm,
+  have b_nonneg : ∀ a, 0 ≤ b a := λ a, abs_nonneg _,
+  have hF_int' : ∀ x ∈ ball x₀ ε, integrable (F x) μ,
+  { intros x x_in,
+    have : ∀ᵐ a ∂μ, ∥F x a - F x₀ a∥ ≤ ε * ∥(bound a : ℝ)∥,
+    { apply h_lipsch.mono,
+      intros a ha,
+      rw ← dist_eq_norm,
+      apply (lipschitz_on_with_iff_dist_le_mul.mp ha x x₀ x_in x₀_in).trans,
+      rw [mul_comm, nnreal.coe_abs, real.norm_eq_abs],
+      rw mem_ball at x_in,
+      apply mul_le_mul_of_nonneg_right (le_of_lt x_in) (abs_nonneg  _) },
+    apply integrable_of_norm_sub_le (hF_meas x₀ x₀_in) hF_int _ _ this,
+    exact measurable.const_mul (measurable_norm.comp bound_measurable) ε,
+    apply integrable.const_mul bound_integrable.norm },
+  have hF'_int : integrable F' μ,
+  { have : ∀ᵐ a ∂μ, ∥F' a∥ ≤ b a,
+    { apply (h_diff.and h_lipsch).mono,
+      rintros a ⟨ha_diff, ha_lip⟩,
+      exact ha_diff.le_of_lip (ball_mem_nhds _ ε_pos) ha_lip },
+    exact b_int.mono' this },
+  have h_ball: ball x₀ ε ∈ 𝓝 x₀ := ball_mem_nhds x₀ ε_pos,
+  have : ∀ᶠ x in 𝓝 x₀,
+      ∥x - x₀∥⁻¹ * ∥∫ a, F x a ∂μ - ∫ a, F x₀ a ∂μ - (∫ a, F' a ∂μ) (x - x₀)∥ =
+       ∥∫ a, ∥x - x₀∥⁻¹ • (F x a - F x₀ a  - F' a (x - x₀)) ∂μ∥,
+  { apply mem_sets_of_superset (ball_mem_nhds _ ε_pos),
+    intros x x_in,
+    rw [set.mem_set_of_eq, mul_norm_of_nonneg (nneg _), integral_smul,
+        integral_sub, integral_sub, continuous_linear_map.apply_integral hF'_meas hF'_int],
+    exacts [hF_meas _ x_in,
+            hF_int' x x_in,
+            hF_meas _ x₀_in,
+            hF_int,
+            (hF_meas _ x_in).sub (hF_meas _ x₀_in),
+            (hF_int' x x_in).sub (hF_meas _ x_in) (hF_meas _ x₀_in) hF_int,
+            hF'_meas.apply_continuous_linear_map _,
+            hF'_int.apply_continuous_linear_map hF'_meas _] },
+  rw [has_fderiv_at_iff_tendsto, tendsto_congr' this, ← tendsto_zero_iff_norm_tendsto_zero,
+      ← show ∫ (a : α), ∥x₀ - x₀∥⁻¹ • (F x₀ a - F x₀ a - (F' a) (x₀ - x₀)) ∂μ = 0, by simp],
+  apply tendsto_integral_filter_of_dominated_convergence,
+  { apply is_countably_generated_nhds },
+  { filter_upwards [h_ball],
+    intros x x_in,
+    apply measurable.const_smul,
+    exact ((hF_meas _ x_in).sub (hF_meas _ x₀_in)).sub (hF'_meas.apply_continuous_linear_map _) },
+  { simp [measurable_const] },
+  { apply mem_sets_of_superset h_ball,
+    intros x hx,
+    apply (h_diff.and h_lipsch).mono,
+    rintros a ⟨ha_deriv, ha_bound⟩,
+    show ∥∥x - x₀∥⁻¹ • (F x a - F x₀ a - F' a (x - x₀))∥ ≤ b a + ∥F' a∥,
+    replace ha_bound : ∥F x a - F x₀ a∥ ≤ b a * ∥x - x₀∥,
+    { rw lipschitz_on_with_iff_dist_le_mul at ha_bound,
+      simpa [← dist_eq_norm] using ha_bound _ _ hx x₀_in },
+    calc ∥∥x - x₀∥⁻¹ • (F x a - F x₀ a - F' a (x - x₀))∥
+    = ∥∥x - x₀∥⁻¹ • (F x a - F x₀ a) - ∥x - x₀∥⁻¹ • F' a (x - x₀)∥ : by rw smul_sub
+    ... ≤  ∥∥x - x₀∥⁻¹ • (F x a - F x₀ a)∥ + ∥∥x - x₀∥⁻¹ • F' a (x - x₀)∥ : norm_sub_le _ _
+    ... =  ∥x - x₀∥⁻¹ * ∥F x a - F x₀ a∥ + ∥x - x₀∥⁻¹ * ∥F' a (x - x₀)∥ : by { rw [mul_norm_of_nonneg, mul_norm_of_nonneg] ; exact nneg _}
+    ... ≤  ∥x - x₀∥⁻¹ * (b a * ∥x - x₀∥) + ∥x - x₀∥⁻¹ * (∥F' a∥ * ∥x - x₀∥) : add_le_add _ _
+    ... ≤ b a + ∥F' a∥ : _,
+    exact mul_le_mul_of_nonneg_left ha_bound (nneg _),
+    apply mul_le_mul_of_nonneg_left ((F' a).le_op_norm _) (nneg _),
+    by_cases h : ∥x - x₀∥ = 0,
+    { simpa [h] using add_nonneg (b_nonneg a) (norm_nonneg (F' a)) },
+    { field_simp [h] } },
+  { exact integrable.add b_meas b_int hF'_meas.norm hF'_int.norm },
+  { apply h_diff.mono,
+    intros a ha,
+    suffices : tendsto (λ x, ∥x - x₀∥⁻¹ • (F x a - F x₀ a - F' a (x - x₀))) (𝓝 x₀) (𝓝 0),
+    by simpa,
+    rw tendsto_zero_iff_norm_tendsto_zero,
+    have : (λ x, ∥x - x₀∥⁻¹ * ∥F x a - F x₀ a - F' a (x - x₀)∥) = λ x, ∥∥x - x₀∥⁻¹ • (F x a - F x₀ a - F' a (x - x₀))∥,
+    { ext x,
+      rw mul_norm_of_nonneg (nneg _) },
+    rwa [has_fderiv_at_iff_tendsto, this] at ha },
+end
+
 end
