@@ -231,6 +231,10 @@ noncomputable
 def continuous_linear_map.smul_rightL (c : E →L[𝕜] 𝕜) : F →L[𝕜] (E →L[𝕜] F) :=
 (c.smul_rightₗ : F →ₗ[𝕜] (E →L[𝕜] F)).mk_continuous _ (λ f, le_of_eq $ c.norm_smul_right_apply f)
 
+@[simp] lemma continuous_linear_map.norm_smul_rightL_apply (c : E →L[𝕜] 𝕜) (f : F) :
+  ∥c.smul_rightL f∥ = ∥c∥ * ∥f∥ :=
+by simp [continuous_linear_map.smul_rightL, continuous_linear_map.smul_rightₗ]
+
 @[simp]
 lemma continuous_linear_map.norm_smul_right (c : E →L[𝕜] 𝕜) (hF : 0 < vector_space.dim 𝕜 F) :
   ∥(c.smul_rightL : F →L[𝕜] (E →L[𝕜] F))∥ = ∥c∥ :=
@@ -509,7 +513,7 @@ lemma has_fderiv_at_of_dominated_of_lip {F : H → α → E} {F' : α → (H →
   (bound_measurable : measurable (bound : α → ℝ))
   (bound_integrable : integrable (bound : α → ℝ) μ)
   (h_diff : ∀ᵐ a ∂μ, has_fderiv_at (λ x, F x a) (F' a) x₀) :
-  has_fderiv_at (λ x, ∫ a, F x a ∂μ) (∫ a, F' a ∂μ) x₀ :=
+  integrable F' μ ∧ has_fderiv_at (λ x, ∫ a, F x a ∂μ) (∫ a, F' a ∂μ) x₀ :=
 begin
   have x₀_in : x₀ ∈ ball x₀ ε := mem_ball_self ε_pos,
   have nneg : ∀ x, 0 ≤ ∥x - x₀∥⁻¹ := λ x, inv_nonneg.mpr (norm_nonneg _) ,
@@ -536,6 +540,7 @@ begin
       rintros a ⟨ha_diff, ha_lip⟩,
       exact ha_diff.le_of_lip (ball_mem_nhds _ ε_pos) ha_lip },
     exact b_int.mono' this },
+  refine ⟨hF'_int, _⟩,
   have h_ball: ball x₀ ε ∈ 𝓝 x₀ := ball_mem_nhds x₀ ε_pos,
   have : ∀ᶠ x in 𝓝 x₀,
       ∥x - x₀∥⁻¹ * ∥∫ a, F x a ∂μ - ∫ a, F x₀ a ∂μ - (∫ a, F' a ∂μ) (x - x₀)∥ =
@@ -609,12 +614,13 @@ lemma has_deriv_at_of_dominated_loc_of_lip'' {F : ℝ → α → E} {F' : α →
   (h_diff : ∀ᵐ a ∂μ, has_deriv_at (λ x, F x a) (F' a) x₀) :
   has_deriv_at (λ x, ∫ a, F x a ∂μ) (∫ a, F' a ∂μ) x₀ :=
 begin
-  simp_rw has_deriv_at_iff_has_fderiv_at at h_diff ⊢,
-  have := ((1 : ℝ →L[ℝ] ℝ).smul_rightL : E →L[ℝ] _).integral_apply_comm hF'_meas sorry,
-  change has_fderiv_at (λ (x : ℝ), integral μ (F x)) ((1 : ℝ →L[ℝ] ℝ).smul_rightL (∫ a, F' a ∂μ)) x₀,
-  rw ← this,
-  exact has_fderiv_at_of_dominated_of_lip ε_pos hF_meas hF_int
+  cases has_fderiv_at_of_dominated_of_lip ε_pos hF_meas hF_int
     ((1 : ℝ →L[ℝ] ℝ).smul_rightL.continuous.measurable.comp hF'_meas) h_lipsch
-    bound_measurable bound_integrable h_diff
+    bound_measurable bound_integrable h_diff with hF'_int key,
+  replace hF'_int : integrable F' μ, by  simpa [← integrable_norm_iff] using hF'_int,
+  simp_rw has_deriv_at_iff_has_fderiv_at at h_diff ⊢,
+  change has_fderiv_at (λ (x : ℝ), integral μ (F x)) ((1 : ℝ →L[ℝ] ℝ).smul_rightL (∫ a, F' a ∂μ)) x₀,
+  rwa ←  ((1 : ℝ →L[ℝ] ℝ).smul_rightL : E →L[ℝ] _).integral_apply_comm hF'_meas hF'_int
 end
+
 end
