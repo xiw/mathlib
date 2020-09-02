@@ -1072,9 +1072,24 @@ begin
   exact (zero_pow (nat.sub_pos_of_lt h)).symm
 end
 
+theorem is_o_norm_pow_norm_pow {m n : ℕ} (h : m < n) :
+  is_o (λ(x : E'), ∥x∥^n) (λx, ∥x∥^m) (𝓝 (0 : E')) :=
+begin
+  apply (is_o_pow_pow h).comp_tendsto,
+  simp [lim_norm_zero],
+end
+
 theorem is_o_pow_id {n : ℕ} (h : 1 < n) :
   is_o (λ(x : 𝕜), x^n) (λx, x) (𝓝 0) :=
 by { convert is_o_pow_pow h, simp only [pow_one] }
+
+theorem is_o_norm_pow_id {n : ℕ} (h : 1 < n) :
+  is_o (λ(x : E'), ∥x∥^n) (λx, x) (𝓝 0) :=
+begin
+  rw ← is_o_norm_right,
+  convert is_o_norm_pow_norm_pow h,
+  simp only [pow_one]
+end
 
 theorem is_O_with.right_le_sub_of_lt_1 {f₁ f₂ : α → E'} (h : is_O_with c f₁ f₂ l) (hc : c < 1) :
   is_O_with (1 / (1 - c)) f₂ (λx, f₂ x - f₁ x) l :=

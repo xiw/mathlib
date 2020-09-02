@@ -70,7 +70,7 @@ variables {𝕜 : Type*} [nondiscrete_normed_field 𝕜]
 {G : Type*} [normed_group G] [normed_space 𝕜 G]
 
 open_locale topological_space classical big_operators
-open filter
+open filter asymptotics
 
 /-! ### The radius of a formal multilinear series -/
 
@@ -340,6 +340,49 @@ begin
       (nnreal.coe_nonneg _)
     ... ≤ C * a ^ n : by exact_mod_cast hC n,
 end
+
+
+lemma has_fpower_series_on_ball.has_fderiv_at (hf : has_fpower_series_on_ball f p x r) :
+  has_fderiv_at f (continuous_multilinear_curry_fin1 𝕜 E F (p 1)) x :=
+begin
+  rcases ennreal.lt_iff_exists_nnreal_btwn.1 hf.r_pos with ⟨r', xr', hr'⟩,
+  obtain ⟨a, C, ha, hC⟩ : ∃ a C, a < 1 ∧ ∀ n, nnnorm (p n) * r' ^n ≤ C * a^n :=
+    p.geometric_bound_of_lt_radius (lt_of_lt_of_le hr' hf.r_le),
+  have A : ∀ h ∈ metric.ball (0 : E) r', ∥f (x + h) - f x - (p 1) (fin.snoc 0 h)∥ ≤ C * ∥h∥^2,
+  { assume h Hh,
+    have hmem : h ∈ emetric.ball (0 : E) r,
+    { apply lt_trans _ hr',
+      rw edist_dist,
+      convert (ennreal.of_real_lt_of_real_iff (by exact_mod_cast xr')).2 Hh,
+      simp only [nnreal.of_real_coe] },
+    suffices H : ∥(∑' (i : ℕ), (p (i + 2)) (λ (i : fin (i + 2)), h))∥ ≤ ↑C * ∥h∥ ^ 2,
+    { have R1 : (λ (i : fin 1), h) = fin.snoc 0 h, by { ext i, simp [fin.snoc] },
+      rw [← (hf.has_sum hmem).tsum_eq, ← sum_add_tsum_nat_add 2 ( (hf.has_sum hmem).summable)],
+      simp [finset.sum_range_succ, ← R1, hf.coeff_zero],
+      convert H,
+      abel },
+
+
+
+
+
+  },
+
+end
+
+#exit
+  have B : is_O (λ (h : E), f (x + h) - f x - (p 1) (fin.snoc 0 h)) (λ (h : E), ∥h∥^2) (𝓝 0),
+  { rw is_O_iff,
+    use C,
+    simp only [normed_field.norm_pow, norm_norm],
+    refine eventually_of_mem _ A,
+    apply metric.ball_mem_nhds,
+    exact_mod_cast xr' },
+  rw has_fderiv_at_iff_is_o_nhds_zero,
+  exact B.trans_is_o (is_o_norm_pow_id one_lt_two)
+end
+
+#exit
 
 /-- If a function admits a power series expansion at `x`, then it is the uniform limit of the
 partial sums of this power series on strict subdisks of the disk of convergence, i.e., `f (x + y)`

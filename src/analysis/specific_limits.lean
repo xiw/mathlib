@@ -116,7 +116,7 @@ end
 
 lemma tendsto_inv_at_top_zero [discrete_linear_ordered_field α] [topological_space α]
   [order_topology α] : tendsto (λr:α, r⁻¹) at_top (𝓝 0) :=
-tendsto_inv_at_top_zero'.mono_right inf_le_left 
+tendsto_inv_at_top_zero'.mono_right inf_le_left
 
 lemma summable_of_absolute_convergence_real {f : ℕ → ℝ} :
   (∃r, tendsto (λn, (∑ i in range n, abs (f i))) at_top (𝓝 r)) → summable f
@@ -541,6 +541,10 @@ begin
   apply dist_le_of_le_geometric_of_tendsto r C hr (dist_partial_sum_le_of_le_geometric hf),
   exact ha.tendsto_sum_nat
 end
+
+lemma norm_tsum_le_of_geometric_bound (hr : r < 1) (hf : ∀n, ∥f n∥ ≤ C * r^n) :
+  ∥(∑' n, f n)∥ ≤ C / (1 - r) :=
+tsum_of_norm_bounded (aux_has_sum_of_le_geometric hr (dist_partial_sum_le_of_le_geometric hf)) hf
 
 end summable_le_geometric
 

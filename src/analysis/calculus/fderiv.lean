@@ -202,8 +202,10 @@ section derivative_uniqueness
 We prove that the definitions `unique_diff_within_at` and `unique_diff_on` indeed imply the
 uniqueness of the derivative. -/
 
-/-- If a function f has a derivative f' at x, a rescaled version of f around x converges to f', i.e.,
-`n (f (x + (1/n) v) - f x)` converges to `f' v`. More generally, if `c n` tends to infinity and
+/-- If a function `f` has a derivative `f'` at `x`, a rescaled version of `f` around `x` converges
+to `f'`, i.e., `n (f (x + (1/n) v) - f x)` converges to `f' v`.
+
+More generally, if `c n` tends to infinity and
 `c n * d n` tends to `v`, then `c n * (f (x + d n) - f x)` tends to `f' v`. This lemma expresses
 this fact, for functions having a derivative within a set. Its specific formulation is useful for
 tangent cone related discussions. -/
