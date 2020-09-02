@@ -898,7 +898,31 @@ lemma map_smul (x : f.codomain) (z : R) :
 show f.map hy k (f.to_map z * x) = k.to_map (g z) * f.map hy k x,
 by rw [ring_hom.map_mul, map_eq]
 
+end localization_map
+
+namespace localization
+
+variables (f : localization_map M S)
+
+/-- Given a localization map `f : R →+* S` for a submonoid `M`, we get an `R`-preserving
+isomorphism between the localization of `R` at `M` as a quotient type and `S`. -/
+noncomputable def alg_equiv_of_quotient : localization M ≃ₐ[R] f.codomain :=
+{ commutes' := ring_equiv_of_quotient_of,
+  ..ring_equiv_of_quotient f }
+
+lemma alg_equiv_of_quotient_apply (x : localization M) :
+alg_equiv_of_quotient f x = ring_equiv_of_quotient f x := rfl
+
+lemma alg_equiv_of_quotient_symm_apply (x : f.codomain) :
+  (alg_equiv_of_quotient f).symm x = (ring_equiv_of_quotient f).symm x := rfl
+
+end localization
+
+namespace localization_map
+
 section integer_normalization
+
+variables {f : localization_map M S}
 
 open finsupp polynomial
 open_locale classical
@@ -964,8 +988,8 @@ by rw [aeval_def, is_scalar_tower.algebra_map_eq R f.codomain R', algebra_map_eq
     integer_normalization_eval₂_eq_zero _ _ hx]
 
 end integer_normalization
-
 end localization_map
+
 variables (R) {A : Type*} [integral_domain A]
 variables (K : Type*)
 
@@ -1365,10 +1389,10 @@ noncomputable instance : field (fraction_ring A) :=
 by erw [localization.mk_eq_mk', (of A).mk'_eq_div]
 
 /-- Given an integral domain `A` and a localization map to a field of fractions
-`f : A →+* K`, we get an isomorphism between the field of fractions of `A` as a quotient
+`f : A →+* K`, we get an `A`-isomorphism between the field of fractions of `A` as a quotient
 type and `K`. -/
-noncomputable def field_equiv_of_quotient {K : Type*} [field K] (f : fraction_map A K) :
-  fraction_ring A ≃+* K :=
-localization.ring_equiv_of_quotient f
+noncomputable def alg_equiv_of_quotient {K : Type*} [field K] (f : fraction_map A K) :
+  fraction_ring A ≃ₐ[A] f.codomain :=
+localization.alg_equiv_of_quotient f
 
 end fraction_ring
