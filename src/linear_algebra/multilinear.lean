@@ -535,8 +535,7 @@ section currying
 We associate to a multilinear map in `n+1` variables (i.e., based on `fin n.succ`) two
 curried functions, named `f.curry_left` (which is a linear map on `E 0` taking values
 in multilinear maps in `n` variables) and `f.curry_right` (wich is a multilinear map in `n`
-variables taking values in linear maps on `E 0`). In both constructions, the variable that is
-singled out is `0`, to take advantage of the operations `cons` and `tail` on `fin n`.
+variables taking values in linear maps on `E (last n)`).
 The inverse operations are called `uncurry_left` and `uncurry_right`.
 
 We also register linear equiv versions of these correspondences, in
@@ -737,5 +736,33 @@ def multilinear_curry_right_equiv :
   inv_fun   := multilinear_map.curry_right,
   left_inv  := multilinear_map.curry_uncurry_right,
   right_inv := multilinear_map.uncurry_curry_right }
+
+/- The most general version of curryfication for multilinear maps goes as follows. Consider
+a finset `s` of `fin n`, of cardinal `k`. Then a multilinear map in `n` variables can be
+seen as a multilinear map in `k` variables, taking values in multilinear maps in `n - k` variables,
+obtained by first choosing the variables in `s`, and then the variables in `sᶜ`. -/
+variables {k : ℕ} {α β : Type*} [decidable_eq α] [decidable_eq β]
+
+def multilinear_map.curry (f : multilinear_map R (λ (i : α ⊕ β), M') M₂) :
+  multilinear_map R (λ(i : α), M') (multilinear_map R (λ (i : β), M') M₂) :=
+{ to_fun := λ m,
+  { to_fun := λ m', f (sum.elim m m'),
+    map_add' := λ m' i x y, begin
+      have : ∀ z, sum.elim m (update m' i z) = update (sum.elim m m') (sum.inr i) z,
+      { assume z,
+        ext j,
+        cases j,
+        { simp },
+        { simp,
+          by_cases h : j = i,
+          { rw h, simp },
+          { simp [h], } } },
+      simp [this],
+
+    end,
+
+  }
+
+}
 
 end currying

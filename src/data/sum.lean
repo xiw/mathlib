@@ -95,6 +95,30 @@ lemma elim_injective {α β γ : Sort*} {f : α → γ} {g : β → γ}
   (sum.rec_on y (λ x y hxy, by rw hf hxy) (λ x y hxy, false.elim $ hfg _ _ hxy))
   (sum.rec_on y (λ x y hxy, false.elim $ hfg x y hxy.symm) (λ x y hxy, by rw hg hxy))
 
+lemma update_sum_inl {α β γ} [decidable_eq α] [decidable_eq β]
+  {f : α → γ} {g : β → γ} {i : α} {x : γ} :
+  function.update (sum.elim f g) (sum.inl i) x = sum.elim (function.update f i x) g :=
+begin
+  apply funext (λ j, _),
+  cases j,
+  { by_cases h : j = i,
+    { rw h, simp },
+    { simp [h] } },
+  { simp }
+end
+
+lemma update_sum_inr {α β γ} [decidable_eq α] [decidable_eq β]
+  {f : α → γ} {g : β → γ} {i : β} {x : γ} :
+  function.update (sum.elim f g) (sum.inr i) x = sum.elim f (function.update g i x) :=
+begin
+  apply funext (λ j, _),
+  cases j,
+  { simp },
+  { by_cases h : j = i,
+    { rw h, simp },
+    { simp [h] } }
+end
+
 section
   variables (ra : α → α → Prop) (rb : β → β → Prop)
 

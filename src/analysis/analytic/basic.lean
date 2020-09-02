@@ -834,3 +834,16 @@ end
 variables {𝕜 f}
 
 end
+
+
+
+namespace formal_multilinear_series
+
+variables (p : formal_multilinear_series 𝕜 E F) {x y : E} {r : nnreal}
+
+/-
+
+-/
+def fderiv :
+  formal_multilinear_series 𝕜 E (E →L[𝕜] F) :=
+λ n, tsum (λ(i : fin (n+1)), (p (n+1)).restr ({i}) i.2.2 x :)
