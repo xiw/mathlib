@@ -79,6 +79,11 @@ variables [semiring R]
 
 instance : has_coe_to_fun (multilinear_map R M₁ M₂) := ⟨_, to_fun⟩
 
+@[simp] lemma coe_mk {f : (Πi, M₁ i) → M₂} {h}
+  {h' : ∀(m : Πi, M₁ i) (i : ι) (c : R) (x : M₁ i), f (update m i (c • x)) = c • f (update m i x)} :
+  (multilinear_map.mk f h h' : (Πi, M₁ i) → M₂) = f :=
+rfl
+
 @[ext] theorem ext {f f' : multilinear_map R M₁ M₂} (H : ∀ x, f x = f' x) : f = f' :=
 by cases f; cases f'; congr'; exact funext H
 
@@ -270,9 +275,9 @@ begin
   by_cases Ai_singleton : ∀ i, (A i).card ≤ 1,
   { have Ai_card : ∀ i, (A i).card = 1,
     { assume i,
-      have : finset.card (A i) ≠ 0, by simp [finset.card_eq_zero, Ai_empty i],
-      have : finset.card (A i) ≤ 1 := Ai_singleton i,
-      omega },
+      have : finset.card (A i) ≠ 0,
+        by simp only [card_eq_zero, Ai_empty i, ne.def, not_false_iff],
+      exact le_antisymm (Ai_singleton i) (nat.pos_of_ne_zero this) },
     have : ∀ (r : Π i, α i), r ∈ pi_finset A → f (λ i, g i (r i)) = f (λ i, ∑ j in A i, g i j),
     { assume r hr,
       unfold_coes,
@@ -444,8 +449,7 @@ all the `m i` (multiplied by a fixed reference element `z` in the target module)
 protected def mk_pi_ring [fintype ι] (z : M₂) : multilinear_map R (λ(i : ι), R) M₂ :=
 { to_fun := λm, (∏ i, m i) • z,
   map_add'  := λ m i x y, by simp [finset.prod_update_of_mem, add_mul, add_smul],
-  map_smul' := λ m i c x, by { rw [smul_eq_mul],
-    simp [finset.prod_update_of_mem, smul_smul, mul_assoc] } }
+  map_smul' := λ m i c x, by simp [finset.prod_update_of_mem, smul_smul, mul_assoc] }
 
 variables {R ι}
 
@@ -689,17 +693,8 @@ def multilinear_map.curry_right (f : multilinear_map R M M₂) :
   { to_fun    := λx, f (snoc m x),
     map_add'  := λx y, by rw f.snoc_add,
     map_smul' := λc x, by rw f.snoc_smul },
-  map_add' := λm i x y, begin
-    ext z,
-    change f (snoc (update m i (x + y)) z)
-      = f (snoc (update m i x) z) + f (snoc (update m i y) z),
-    rw [snoc_update, snoc_update, snoc_update, f.map_add]
-  end,
-  map_smul' := λm i c x, begin
-    ext z,
-    change f (snoc (update m i (c • x)) z) = c • f (snoc (update m i x) z),
-    rw [snoc_update, snoc_update, f.map_smul]
-  end }
+  map_add' := λm i x y, by { ext z, simp },
+  map_smul' := λm i c x, by { ext z, simp } }
 
 @[simp] lemma multilinear_map.curry_right_apply
   (f : multilinear_map R M M₂) (m : Π(i : fin n), M i.cast_succ) (x : M (last n)) :
@@ -747,21 +742,24 @@ def multilinear_map.curry (f : multilinear_map R (λ (i : α ⊕ β), M') M₂) 
   multilinear_map R (λ(i : α), M') (multilinear_map R (λ (i : β), M') M₂) :=
 { to_fun := λ m,
   { to_fun := λ m', f (sum.elim m m'),
-    map_add' := λ m' i x y, begin
-      have : ∀ z, sum.elim m (update m' i z) = update (sum.elim m m') (sum.inr i) z,
-      { assume z,
-        ext j,
-        cases j,
-        { simp },
-        { simp,
-          by_cases h : j = i,
-          { rw h, simp },
-          { simp [h], } } },
-      simp [this],
+    map_add' := λ m' i x y, by simp [← sum.update_elim_inr],
+    map_smul' := λ m i c x, by simp [← sum.update_elim_inr] },
+  map_add' := λ m i x y, by { ext m', simp [← sum.update_elim_inl] },
+  map_smul' := λ m i c x, by { ext m', simp [← sum.update_elim_inl] } }
 
-    end,
+def multilinear_map.uncurry
+  (f : multilinear_map R (λ(i : α), M') (multilinear_map R (λ (i : β), M') M₂)) :
+  multilinear_map R (λ (i : α ⊕ β), M') M₂ :=
+{ to_fun := λ m, f (m ∘ sum.inl) (m ∘ sum.inr),
+  map_add' := λ m i x y, begin
+    cases i,
+    have : injective (sum.inl : α → α ⊕ β),
+    { library_search!,
 
-  }
+    },
+    have Z := update_comp,
+
+  end
 
 }
 

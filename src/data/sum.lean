@@ -79,6 +79,12 @@ theorem inl_ne_inr {a : α} {b : β} : inl a ≠ inr b.
 
 theorem inr_ne_inl {a : α} {b : β} : inr b ≠ inl a.
 
+lemma inl_injective : function.injective (sum.inl : α → α ⊕ β) :=
+λ x y, sum.inl.inj
+
+lemma inr_injective : function.injective (sum.inr : β → α ⊕ β) :=
+λ x y, sum.inr.inj
+
 /-- Define a function on `α ⊕ β` by giving separate definitions on `α` and `β`. -/
 protected def elim {α β γ : Sort*} (f : α → γ) (g : β → γ) : α ⊕ β → γ := λ x, sum.rec_on x f g
 
@@ -95,7 +101,7 @@ lemma elim_injective {α β γ : Sort*} {f : α → γ} {g : β → γ}
   (sum.rec_on y (λ x y hxy, by rw hf hxy) (λ x y hxy, false.elim $ hfg _ _ hxy))
   (sum.rec_on y (λ x y hxy, false.elim $ hfg x y hxy.symm) (λ x y hxy, by rw hg hxy))
 
-lemma update_sum_inl {α β γ} [decidable_eq α] [decidable_eq β]
+lemma update_elim_inl {α β γ} [decidable_eq α] [decidable_eq β]
   {f : α → γ} {g : β → γ} {i : α} {x : γ} :
   function.update (sum.elim f g) (sum.inl i) x = sum.elim (function.update f i x) g :=
 begin
@@ -107,7 +113,7 @@ begin
   { simp }
 end
 
-lemma update_sum_inr {α β γ} [decidable_eq α] [decidable_eq β]
+lemma update_elim_inr {α β γ} [decidable_eq α] [decidable_eq β]
   {f : α → γ} {g : β → γ} {i : β} {x : γ} :
   function.update (sum.elim f g) (sum.inr i) x = sum.elim f (function.update g i x) :=
 begin
