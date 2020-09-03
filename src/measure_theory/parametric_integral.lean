@@ -133,6 +133,77 @@ lemma is_countably_generated_nhds_within {X : Type*} [topological_space X] [firs
 
 end first_countable
 
+
+/-! # Finite dimensional -/
+
+section
+open submodule finite_dimensional
+variables  {K : Type*}  [field K] {V : Type*} [add_comm_group V] [vector_space K V] -- [finite_dimensional K V]
+           {n : ℕ} {v : fin n → V} {ι : Type*}
+
+lemma finite_dimensional.equiv_fin [finite_dimensional K V] {v : ι → V} (hv : is_basis K v) :
+  ∃ g : fin (findim K V) ≃ ι, is_basis K (v ∘ g) :=
+begin
+  have : (cardinal.mk (fin $ findim K V)).lift = (cardinal.mk ι).lift,
+    by simp [cardinal.mk_fin (findim K V),  ← findim_eq_card_basis' hv],
+  rcases cardinal.lift_mk_eq.mp this with ⟨g⟩,
+  exact ⟨g, hv.comp _ g.bijective⟩
+end
+
+variables (K V)
+
+lemma finite_dimensional.fin_basis [finite_dimensional K V] : ∃ v : fin (findim K V) → V,
+ is_basis K v :=
+let ⟨B, hB, B_fin⟩ := exists_is_basis_finite K V, ⟨g, hg⟩ := finite_dimensional.equiv_fin hB in
+⟨coe ∘ g, hg⟩
+
+end
+
+/-! # Second countable -/
+section
+open set
+variables (X : Type*) [topological_space X]
+
+lemma exists_dense_seq [separable_space X] [nonempty X] : ∃ u : ℕ → X, closure (range u) = univ :=
+begin
+  obtain ⟨s : set X, hs, s_dense⟩ := separable_space.exists_countable_closure_eq_univ ; try { apply_instance },
+  cases countable_iff_exists_surjective.mp hs with u hu,
+  use u,
+  apply eq_univ_of_univ_subset,
+  simpa [s_dense] using closure_mono hu
+end
+
+def dense_seq [separable_space X] [nonempty X] : ℕ → X := classical.some (exists_dense_seq X)
+
+def dense_seq_dense [separable_space X] [nonempty X] :
+  closure (range $ dense_seq X) = univ := classical.some_spec (exists_dense_seq X)
+
+-- TODO: check what holds over any normed field
+
+variables {E : Type*} [normed_group E] [normed_space ℝ E]
+variables {F : Type*} [normed_group F] [normed_space ℝ F]
+
+def is_basis.constrL {ι : Type*} [fintype ι] {v : ι → E} (hv : is_basis ℝ v) (f : ι → F) : E →L[ℝ] F :=
+sorry
+
+instance [finite_dimensional ℝ E] [second_countable_topology F] : second_countable_topology (E →L[ℝ] F) :=
+begin
+  set d := finite_dimensional.findim ℝ E,
+  obtain ⟨u, hu⟩ := exists_dense_seq F,
+  rcases finite_dimensional.fin_basis ℝ E with ⟨v : fin d → E, hv⟩,
+  apply metric.second_countable_of_countable_discretization,
+  intros ε ε_pos,
+  refine ⟨fin d → ℕ, by apply_instance, _⟩,
+  -- The next line should have ε/C for C relating the sup norm wrt v and the norm on E
+  have : ∀ φ : E →L[ℝ] F, ∃ n : fin d → ℕ, ∥φ - (hv.constrL $ u ∘ n)∥ ≤ ε,
+  sorry,
+  choose n hn using this,
+  use n,
+
+end
+
+end
+#exit
 /-! # Normed groups -/
 
 section
