@@ -1,6 +1,7 @@
 import measure_theory.interval_integral
 import measure_theory.clm
 import analysis.calculus.mean_value
+import analysis.normed_space.finite_dimension
 
 noncomputable theory
 
@@ -183,23 +184,53 @@ def dense_seq_dense [separable_space X] [nonempty X] :
 variables {E : Type*} [normed_group E] [normed_space ℝ E]
 variables {F : Type*} [normed_group F] [normed_space ℝ F]
 
-def is_basis.constrL {ι : Type*} [fintype ι] {v : ι → E} (hv : is_basis ℝ v) (f : ι → F) : E →L[ℝ] F :=
-sorry
+-- Put in analysis.normed_space.finite_dimension
+
+def is_basis.constrL {ι : Type*} [finite_dimensional ℝ E] {v : ι → E} (hv : is_basis ℝ v) (f : ι → F) :
+  E →L[ℝ] F :=
+(hv.constr f).to_continuous_linear_map
+
+@[simp] lemma is_basis.constrL_apply {ι : Type*} [finite_dimensional ℝ E] {v : ι → E} (hv : is_basis ℝ v)(f : ι → F) (e : E) :
+  (hv.constrL f) e = (hv.repr e).sum (λb a, a • f b) :=
+by { dsimp only [is_basis.constrL], apply is_basis.constr_apply }
+
+lemma is_basis.sup_norm_le_norm  {ι : Type*} [fintype ι] {v : ι → E} (hv : is_basis ℝ v) :
+  ∃ C > (0 : ℝ), ∀ u : E, ∑ i, ∥ hv.repr u i∥ ≤ C*∥u∥ :=
+begin
+
+  sorry
+end
 
 instance [finite_dimensional ℝ E] [second_countable_topology F] : second_countable_topology (E →L[ℝ] F) :=
 begin
   set d := finite_dimensional.findim ℝ E,
   obtain ⟨u, hu⟩ := exists_dense_seq F,
   rcases finite_dimensional.fin_basis ℝ E with ⟨v : fin d → E, hv⟩,
+  rcases hv.sup_norm_le_norm with ⟨C, C_pos, hC⟩,
   apply metric.second_countable_of_countable_discretization,
   intros ε ε_pos,
   refine ⟨fin d → ℕ, by apply_instance, _⟩,
-  -- The next line should have ε/C for C relating the sup norm wrt v and the norm on E
-  have : ∀ φ : E →L[ℝ] F, ∃ n : fin d → ℕ, ∥φ - (hv.constrL $ u ∘ n)∥ ≤ ε,
-  sorry,
-  choose n hn using this,
-  use n,
+  have : ∀ φ : E →L[ℝ] F, ∃ n : fin d → ℕ, ∥φ - (hv.constrL $ u ∘ n)∥ ≤ ε/2,
+  { intros φ,
+    have : ∀ i, ∃ n, ∥φ (v i) - u n∥ ≤ ε/(2*C),
+    sorry,
+    choose n hn using this,
+    use n,
+    apply continuous_linear_map.op_norm_le_bound _ (le_of_lt $ half_pos ε_pos),
+    intros e,
+    specialize hC e,
+    simp,
+    sorry,
 
+  },
+  choose n hn using this,
+  set Φ := λ φ : E →L[ℝ] F,(hv.constrL $ u ∘ (n φ)),
+  change ∀ z, dist z (Φ z) ≤ ε/2 at hn,
+  use n,
+  intros x y hxy,
+  calc dist x y ≤ dist x (Φ x) + dist (Φ x) y : dist_triangle _ _ _
+  ... = dist x (Φ x) + dist y (Φ y) : by simp [Φ, hxy, dist_comm]
+  ... ≤ ε : by linarith [hn x, hn y],
 end
 
 end
