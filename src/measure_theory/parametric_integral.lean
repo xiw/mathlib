@@ -184,20 +184,38 @@ def dense_seq_dense [separable_space X] [nonempty X] :
 variables {E : Type*} [normed_group E] [normed_space ℝ E]
 variables {F : Type*} [normed_group F] [normed_space ℝ F]
 
+instance (ι α : Type*) [metric_space α]: metric_space (ι →₀ ℝ) :=
+
+instance (ι : Type*) : normed_group (ι →₀ ℝ) :=
+{ norm := λf, ((f.support.sup (λ b, nnnorm (f b)) : nnreal) : ℝ),
+  dist_eq := begin
+
+  /- assume x y,
+    congr_arg (coe : nnreal → ℝ) $ congr_arg (finset.sup finset.univ) $ funext $ assume a,
+    show nndist (x a) (y a) = nnnorm (x a - y a), from nndist_eq_nnnorm _ _  -/
+
+  end  }
+
+instance (ι : Type*) : normed_space ℝ (ι →₀ ℝ) :=
+
 -- Put in analysis.normed_space.finite_dimension
 
 def is_basis.constrL {ι : Type*} [finite_dimensional ℝ E] {v : ι → E} (hv : is_basis ℝ v) (f : ι → F) :
   E →L[ℝ] F :=
 (hv.constr f).to_continuous_linear_map
 
-@[simp] lemma is_basis.constrL_apply {ι : Type*} [finite_dimensional ℝ E] {v : ι → E} (hv : is_basis ℝ v)(f : ι → F) (e : E) :
+lemma is_basis.constrL_apply' {ι : Type*} [finite_dimensional ℝ E] {v : ι → E} (hv : is_basis ℝ v)(f : ι → F) (e : E) :
   (hv.constrL f) e = (hv.repr e).sum (λb a, a • f b) :=
+by { dsimp only [is_basis.constrL], apply is_basis.constr_apply }
+
+@[simp] lemma is_basis.constrL_apply {ι : Type*} [finite_dimensional ℝ E] {v : ι → E} (hv : is_basis ℝ v)(f : ι → F) (e : E) :
+  (hv.constrL f) e = (hv.equiv_fun e).sum (λb a, a • f b) :=
 by { dsimp only [is_basis.constrL], apply is_basis.constr_apply }
 
 lemma is_basis.sup_norm_le_norm  {ι : Type*} [fintype ι] {v : ι → E} (hv : is_basis ℝ v) :
   ∃ C > (0 : ℝ), ∀ u : E, ∑ i, ∥ hv.repr u i∥ ≤ C*∥u∥ :=
 begin
-
+  have := hv.repr,
   sorry
 end
 
