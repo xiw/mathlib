@@ -184,39 +184,53 @@ def dense_seq_dense [separable_space X] [nonempty X] :
 variables {E : Type*} [normed_group E] [normed_space ℝ E]
 variables {F : Type*} [normed_group F] [normed_space ℝ F]
 
-instance (ι α : Type*) [metric_space α]: metric_space (ι →₀ ℝ) :=
-
-instance (ι : Type*) : normed_group (ι →₀ ℝ) :=
-{ norm := λf, ((f.support.sup (λ b, nnnorm (f b)) : nnreal) : ℝ),
-  dist_eq := begin
-
-  /- assume x y,
-    congr_arg (coe : nnreal → ℝ) $ congr_arg (finset.sup finset.univ) $ funext $ assume a,
-    show nndist (x a) (y a) = nnnorm (x a - y a), from nndist_eq_nnnorm _ _  -/
-
-  end  }
-
-instance (ι : Type*) : normed_space ℝ (ι →₀ ℝ) :=
-
 -- Put in analysis.normed_space.finite_dimension
 
-def is_basis.constrL {ι : Type*} [finite_dimensional ℝ E] {v : ι → E} (hv : is_basis ℝ v) (f : ι → F) :
+def is_basis.constrL {ι : Type*} [fintype ι] {v : ι → E} (hv : is_basis ℝ v) (f : ι → F) :
   E →L[ℝ] F :=
-(hv.constr f).to_continuous_linear_map
+⟨hv.constr f, begin
+  haveI : finite_dimensional ℝ E := finite_dimensional.of_finite_basis hv,
+  exact (hv.constr f).continuous_of_finite_dimensional,
+end⟩
 
-lemma is_basis.constrL_apply' {ι : Type*} [finite_dimensional ℝ E] {v : ι → E} (hv : is_basis ℝ v)(f : ι → F) (e : E) :
-  (hv.constrL f) e = (hv.repr e).sum (λb a, a • f b) :=
-by { dsimp only [is_basis.constrL], apply is_basis.constr_apply }
+def is_basis.equiv_funL {ι : Type*} [fintype ι] {v : ι → E} (hv : is_basis ℝ v) : E ≃L[ℝ] (ι → ℝ) :=
+{ continuous_to_fun := begin
+    haveI : finite_dimensional ℝ E := finite_dimensional.of_finite_basis hv,
+    apply linear_map.continuous_of_finite_dimensional,
+  end,
+  continuous_inv_fun := begin
+    change continuous hv.equiv_fun.symm.to_fun,
+    apply linear_map.continuous_of_finite_dimensional,
+  end,
+  ..hv.equiv_fun }
 
-@[simp] lemma is_basis.constrL_apply {ι : Type*} [finite_dimensional ℝ E] {v : ι → E} (hv : is_basis ℝ v)(f : ι → F) (e : E) :
-  (hv.constrL f) e = (hv.equiv_fun e).sum (λb a, a • f b) :=
-by { dsimp only [is_basis.constrL], apply is_basis.constr_apply }
+@[simp] lemma is_basis.constrL_apply {ι : Type*} [fintype ι] {v : ι → E} (hv : is_basis ℝ v)(f : ι → F) (e : E) :
+  (hv.constrL f) e = ∑ i, (hv.equiv_fun e i) • f i :=
+by { simp [is_basis.constrL, hv.equiv_fun_apply, hv.constr_apply, finsupp.sum_fintype] }
 
 lemma is_basis.sup_norm_le_norm  {ι : Type*} [fintype ι] {v : ι → E} (hv : is_basis ℝ v) :
-  ∃ C > (0 : ℝ), ∀ u : E, ∑ i, ∥ hv.repr u i∥ ≤ C*∥u∥ :=
+  ∃ C > (0 : ℝ), ∀ e : E, ∑ i, ∥ hv.equiv_fun e i∥ ≤ C*∥e∥ :=
 begin
-  have := hv.repr,
-  sorry
+  set φ := hv.equiv_funL.to_continuous_linear_map,
+  set C := ∥φ∥ * (fintype.card ι),
+  use if 0 < C then C else 1,
+  split,
+  { split_ifs,
+    exacts [h, zero_lt_one] },
+  { intros e,
+    have key :=
+      calc ∑ i, ∥φ e i∥ ≤ ∑ i : ι, ∥φ e∥ : by { apply finset.sum_le_sum,
+                                               exact λ i hi, norm_le_pi_norm (φ e) i }
+      ... = ∥φ e∥*(fintype.card ι) : by simpa only [mul_comm, finset.sum_const, nsmul_eq_mul]
+      ... ≤ ∥φ∥ * ∥e∥ * (fintype.card ι) : mul_le_mul_of_nonneg_right (φ.le_op_norm e) (fintype.card ι).cast_nonneg
+      ... = (∥φ∥ * (fintype.card ι)) * ∥e∥ : by ring,
+    split_ifs,
+    { exact key },
+    { apply le_trans key,
+      simp [C] at h,
+      rw one_mul,
+      calc ∥φ∥ * ↑(fintype.card ι) * ∥e∥ ≤ 0 : mul_nonpos_of_nonpos_of_nonneg h (norm_nonneg e)
+      ... ≤  ∥e∥ : norm_nonneg e } },
 end
 
 instance [finite_dimensional ℝ E] [second_countable_topology F] : second_countable_topology (E →L[ℝ] F) :=
@@ -237,7 +251,22 @@ begin
     apply continuous_linear_map.op_norm_le_bound _ (le_of_lt $ half_pos ε_pos),
     intros e,
     specialize hC e,
-    simp,
+    simp only [is_basis.constrL_apply, continuous_linear_map.coe_sub', function.comp_app, pi.sub_apply],
+    change ∥φ e - ∑ i : fin d, hv.equiv_fun e i • u (n i)∥ ≤ ε / 2 * ∥e∥,
+    conv_lhs { congr, congr, rw ← hv.equiv_fun_total e },
+    rw [φ.map_sum, ← finset.sum_sub_distrib],
+    conv_lhs { congr, congr, skip, simp [linear_map.map_smul, ← smul_sub] },
+    calc ∥∑ i, (hv.equiv_fun) e i • (φ (v i) - u (n i))∥ ≤ ∑ i, ∥(hv.equiv_fun) e i • (φ (v i) - u (n i))∥ : _
+    ... = ∑ i, ∥(hv.equiv_fun) e i∥ * ∥(φ (v i) - u (n i))∥ : _
+    ... ≤  ∑ i, ∥(hv.equiv_fun) e i∥ * (ε/(2*C)) : _
+    ... = (ε/(2*C)) * ∑ i, ∥(hv.equiv_fun) e i∥ : _
+    ... ≤ (ε/(2*C)) * C*∥e∥ : _
+    ... = ε / 2 * ∥e∥ : _,
+    sorry,
+    sorry,
+    sorry,
+    sorry,
+    sorry,
     sorry,
 
   },
