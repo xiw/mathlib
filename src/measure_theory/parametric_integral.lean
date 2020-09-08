@@ -241,11 +241,20 @@ begin
   rcases hv.sup_norm_le_norm with ⟨C, C_pos, hC⟩,
   apply metric.second_countable_of_countable_discretization,
   intros ε ε_pos,
+  have h_2C : 0 < 2*C, by linarith,
+  have hε2C : 0 < ε/(2*C) := div_pos ε_pos h_2C,
   refine ⟨fin d → ℕ, by apply_instance, _⟩,
   have : ∀ φ : E →L[ℝ] F, ∃ n : fin d → ℕ, ∥φ - (hv.constrL $ u ∘ n)∥ ≤ ε/2,
   { intros φ,
     have : ∀ i, ∃ n, ∥φ (v i) - u n∥ ≤ ε/(2*C),
-    sorry,
+    { simp only [norm_sub_rev],
+      intro i,
+      have : φ (v i) ∈ closure (range u), by simp [hu],
+      obtain ⟨n, hn⟩ : ∃ n, ∥u n - φ (v i)∥ < ε / (2 * C),
+      { rw mem_closure_iff_nhds_basis metric.nhds_basis_ball at this,
+        specialize this (ε/(2*C)) hε2C,
+        simpa [dist_eq_norm] },
+      exact ⟨n, le_of_lt hn⟩ },
     choose n hn using this,
     use n,
     apply continuous_linear_map.op_norm_le_bound _ (le_of_lt $ half_pos ε_pos),
@@ -256,20 +265,17 @@ begin
     conv_lhs { congr, congr, rw ← hv.equiv_fun_total e },
     rw [φ.map_sum, ← finset.sum_sub_distrib],
     conv_lhs { congr, congr, skip, simp [linear_map.map_smul, ← smul_sub] },
-    calc ∥∑ i, (hv.equiv_fun) e i • (φ (v i) - u (n i))∥ ≤ ∑ i, ∥(hv.equiv_fun) e i • (φ (v i) - u (n i))∥ : _
-    ... = ∑ i, ∥(hv.equiv_fun) e i∥ * ∥(φ (v i) - u (n i))∥ : _
-    ... ≤  ∑ i, ∥(hv.equiv_fun) e i∥ * (ε/(2*C)) : _
-    ... = (ε/(2*C)) * ∑ i, ∥(hv.equiv_fun) e i∥ : _
-    ... ≤ (ε/(2*C)) * C*∥e∥ : _
+    calc ∥∑ i, (hv.equiv_fun) e i • (φ (v i) - u (n i))∥
+        ≤ ∑ i, ∥(hv.equiv_fun) e i • (φ (v i) - u (n i))∥ : by { apply norm_sum_le }
+    ... = ∑ i, ∥(hv.equiv_fun) e i∥ * ∥(φ (v i) - u (n i))∥ : by simp [norm_smul]
+    ... ≤  ∑ i, ∥(hv.equiv_fun) e i∥ * (ε/(2*C)) : finset.sum_le_sum (λ i hi,
+                                                   mul_le_mul_of_nonneg_left (hn i) (norm_nonneg _))
+    ... = (∑ i, ∥(hv.equiv_fun) e i∥) * (ε/(2*C)) : by rw finset.sum_mul
+    ... ≤ C*∥e∥ * (ε/(2*C)) : mul_le_mul_of_nonneg_right hC (le_of_lt hε2C)
     ... = ε / 2 * ∥e∥ : _,
-    sorry,
-    sorry,
-    sorry,
-    sorry,
-    sorry,
-    sorry,
-
-  },
+    { field_simp [C_pos, h_2C],
+      rw [show C * ∥e∥ * ε * 2= ∥e∥ * ε * (2*C), by ring,
+          mul_div_cancel _ (ne_of_gt h_2C), mul_comm] } },
   choose n hn using this,
   set Φ := λ φ : E →L[ℝ] F,(hv.constrL $ u ∘ (n φ)),
   change ∀ z, dist z (Φ z) ≤ ε/2 at hn,
@@ -281,7 +287,7 @@ begin
 end
 
 end
-#exit
+
 /-! # Normed groups -/
 
 section
@@ -749,8 +755,6 @@ end
 
 instance : measurable_space (ℝ →L[ℝ] E) := borel _
 instance : borel_space (ℝ →L[ℝ] E) := ⟨rfl⟩
-
-instance : second_countable_topology (ℝ →L[ℝ] E) := sorry
 
 lemma has_deriv_at_of_dominated_loc_of_lip'' {F : ℝ → α → E} {F' : α → E} {x₀ : ℝ} {bound : α → ℝ}
   {ε : ℝ} (ε_pos : 0 < ε)

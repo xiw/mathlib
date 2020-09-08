@@ -33,15 +33,6 @@ variables {E : Type*} [normed_group E] [second_countable_topology E] [normed_spa
 variables {F : Type*} [normed_group F] [second_countable_topology F] [normed_space ℝ F]
   [complete_space F] [measurable_space F] [borel_space F]
 
--- See mathlib PR #3978
-lemma integrable.induction (P : (α → E) → Prop)
-  (h_ind : ∀ (c : E) ⦃s⦄, is_measurable s → μ s < ⊤ → P (s.indicator (λ _, c)))
-  (h_sum : ∀ ⦃f g⦄, measurable f → measurable g → integrable f μ → integrable g μ → P f → P g → P (f + g))
-  (h_closed : is_closed {f : α →₁[μ] E | P f} )
-  (h_ae : ∀ ⦃f g⦄, f =ᵐ[μ] g → measurable f → integrable f μ → measurable g → P f → P g) :
-  ∀ ⦃f : α → E⦄ (hf : measurable f) (h2f : integrable f μ), P f :=
-sorry
-
 -- borel_space.lean, next to measurable.const_smul
 lemma measurable.const_mul {f : α → ℝ} (h : measurable f) (c : ℝ) : measurable (λ x, c*f x) :=
 (measurable.const_smul h c : _)
@@ -213,19 +204,19 @@ variables {μ}
 lemma continuous_linear_map.integral_apply_comm {φ : α → E} (L : E →L[ℝ] F) (φ_meas : measurable φ)
   (φ_int : integrable φ μ) : ∫ a, L (φ a) ∂μ = L (∫ a, φ a ∂μ) :=
 begin
-  apply integrable.induction (λ φ, ∫ a, L (φ a) ∂μ = L (∫ a, φ a ∂μ)) _ _ _ _ φ_meas φ_int,
+  refine integrable.induction _ _ _ _ φ_meas φ_int,
   { intros e s s_meas s_finite,
     rw [integral_indicator_const e s_meas s_finite, continuous_linear_map.map_smul,
         ← integral_indicator_const (L e) s_meas s_finite],
     congr' 1,
     ext a,
     rw set.indicator_comp_of_zero L.map_zero },
-  { intros f g f_meas g_meas f_int g_int hf hg,
+  { intros f g H f_meas g_meas f_int g_int hf hg,
     simp [L.map_add, integral_add f_meas f_int g_meas g_int,
       integral_add (f_meas.clm_apply L) (f_int.clm_apply L)
       (g_meas.clm_apply L) (g_int.clm_apply L), hf, hg] },
   { exact is_closed_eq (L.continuous_integral_apply μ)  (L.continuous.comp continuous_integral) },
-  { intros f g hfg f_meas f_int g_meas hf,
+  { intros f g hfg f_meas g_meas f_int hf,
     convert hf using 1 ; clear hf,
     { exact integral_congr_ae (L.measurable.comp g_meas) (L.measurable.comp f_meas) (hfg.fun_comp L).symm },
     { rw integral_congr_ae g_meas f_meas hfg.symm } }
