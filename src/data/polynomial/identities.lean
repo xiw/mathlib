@@ -3,7 +3,6 @@ Copyright (c) 2018 Chris Hughes. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chris Hughes, Johannes Hölzl, Scott Morrison, Jens Wagemaker
 -/
-import data.polynomial.algebra_map
 import data.polynomial.derivative
 
 /-!
@@ -13,24 +12,16 @@ The main def is `binom_expansion`.
 -/
 
 noncomputable theory
-local attribute [instance, priority 100] classical.prop_decidable
-
-local attribute [instance, priority 10] is_semiring_hom.comp is_ring_hom.comp
-
-open finsupp finset add_monoid_algebra
-open_locale big_operators
 
 namespace polynomial
 universes u v w x y z
 variables {R : Type u} {S : Type v} {T : Type w} {ι : Type x} {k : Type y} {A : Type z}
   {a b : R} {m n : ℕ}
 
-
-
 section identities
 
 /- @TODO: pow_add_expansion and pow_sub_pow_factor are not specific to polynomials.
-  These belong somewhere else. But not in group_power because they depend on tactic.ring
+  These belong somewhere else. But not in group_power because they depend on tactic.ring_exp
 
 Maybe use data.nat.choose to prove it.
  -/
@@ -62,7 +53,7 @@ end
 private lemma poly_binom_aux2 (f : polynomial R) (x y : R) :
   f.eval (x + y) = f.sum (λ e a, a * (x^e + e*x^(e-1)*y + (poly_binom_aux1 x y e a).val*y^2)) :=
 begin
-  unfold eval eval₂, congr, ext,
+  unfold eval eval₂, congr' with n z,
   apply (poly_binom_aux1 x y _ _).property
 end
 
@@ -72,12 +63,17 @@ private lemma poly_binom_aux3 (f : polynomial R) (x y : R) : f.eval (x + y) =
   f.sum (λ e a, (a *(poly_binom_aux1 x y e a).val)*y^2) :=
 by rw poly_binom_aux2; simp [left_distrib, finsupp.sum_add, mul_assoc]
 
+lemma derivative_eval (p : polynomial R) (x : R) :
+  p.derivative.eval x = p.sum (λ n a, (a * n)*x^(n-1)) :=
+by simp only [derivative, eval_sum, eval_pow, eval_C, eval_X, eval_nat_cast, eval_mul]
+
 def binom_expansion (f : polynomial R) (x y : R) :
   {k : R // f.eval (x + y) = f.eval x + (f.derivative.eval x) * y + k * y^2} :=
 begin
   existsi f.sum (λ e a, a *((poly_binom_aux1 x y e a).val)),
   rw poly_binom_aux3,
   congr,
+  { rw [←eval_eq_sum], },
   { rw derivative_eval, symmetry,
     apply finsupp.sum_mul },
   { symmetry, apply finsupp.sum_mul }
@@ -104,7 +100,7 @@ begin
   rw ← finsupp.sum_sub,
   rw finsupp.sum_mul,
   delta finsupp.sum,
-  congr, ext i r, dsimp,
+  congr' with i r, dsimp,
   rw [mul_assoc, ←(pow_sub_pow_factor x y _).prop, mul_sub],
 end
 

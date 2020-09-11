@@ -96,7 +96,7 @@ begin
   have A : ∀ n : ℕ , 0 < n →
     (r : ennreal) ≤ ((C + 1)^(1/(n : ℝ)) : nnreal) * (1 / (nnnorm (p n) ^ (1/(n:ℝ)) : nnreal)),
   { assume n npos,
-    simp only [one_div_eq_inv, mul_assoc, mul_one, eq.symm ennreal.mul_div_assoc],
+    simp only [one_div, mul_assoc, mul_one, eq.symm ennreal.mul_div_assoc],
     rw [ennreal.le_div_iff_mul_le _ _, ← nnreal.pow_nat_rpow_nat_inv r npos, ← ennreal.coe_mul,
         ennreal.coe_le_coe, ← nnreal.mul_rpow, mul_comm],
     { exact nnreal.rpow_le_rpow (le_trans (h n) (le_add_right (le_refl _))) (by simp) },
@@ -111,7 +111,7 @@ begin
     { simp } },
   have D : liminf at_top (λ n : ℕ, (r : ennreal) / ((C + 1)^(1/(n : ℝ)) : nnreal)) ≤ p.radius :=
     liminf_le_liminf B,
-  rw L.liminf_eq filter.at_top_ne_bot at D,
+  rw L.liminf_eq at D,
   simpa using D
 end
 
@@ -137,7 +137,7 @@ begin
     rw [nnreal.lt_inv_iff_mul_lt A, mul_comm] at B,
     have : (nnnorm (p n) ^ (1 / (n : ℝ)) * r) ^ n ≤ 1 :=
       pow_le_one n (zero_le (nnnorm (p n) ^ (1 / ↑n) * r)) (le_of_lt B),
-    rw [mul_pow, one_div_eq_inv, nnreal.rpow_nat_inv_pow_nat _ (lt_of_le_of_lt (zero_le _) hn)]
+    rw [mul_pow, one_div, nnreal.rpow_nat_inv_pow_nat _ (lt_of_le_of_lt (zero_le _) hn)]
       at this,
     exact le_trans this (le_max_right _ _) },
 end
@@ -192,7 +192,7 @@ def partial_sum (p : formal_multilinear_series 𝕜 E F) (n : ℕ) (x : E) : F :
 /-- The partial sums of a formal multilinear series are continuous. -/
 lemma partial_sum_continuous (p : formal_multilinear_series 𝕜 E F) (n : ℕ) :
   continuous (p.partial_sum n) :=
-continuous_finset_sum (finset.range n) $ λ k hk, (p k).cont.comp (continuous_pi (λ i, continuous_id))
+by continuity
 
 end formal_multilinear_series
 
@@ -404,10 +404,8 @@ end
 /-- If a function admits a power series expansion on a disk, then it is continuous there. -/
 lemma has_fpower_series_on_ball.continuous_on
   (hf : has_fpower_series_on_ball f p x r) : continuous_on f (emetric.ball x r) :=
-begin
-  apply hf.tendsto_locally_uniformly_on'.continuous_on _ at_top_ne_bot,
-  exact λ n, ((p.partial_sum_continuous n).comp (continuous_id.sub continuous_const)).continuous_on
-end
+hf.tendsto_locally_uniformly_on'.continuous_on $ λ n,
+  ((p.partial_sum_continuous n).comp (continuous_id.sub continuous_const)).continuous_on
 
 lemma has_fpower_series_at.continuous_at (hf : has_fpower_series_at f p x) : continuous_at f x :=
 let ⟨r, hr⟩ := hf in hr.continuous_on.continuous_at (emetric.ball_mem_nhds x (hr.r_pos))
@@ -524,7 +522,7 @@ begin
       = ∑ s : finset (fin n), nnnorm (p n) * ((nnnorm x) ^ (n - s.card) * r ^ s.card) :
         by simp [← mul_assoc]
       ... = nnnorm (p n) * (nnnorm x + r) ^ n :
-      by { rw [add_comm, ← finset.mul_sum, ← fin.sum_pow_mul_eq_add_pow], congr, ext1 s, ring }
+      by { rw [add_comm, ← finset.mul_sum, ← fin.sum_pow_mul_eq_add_pow], congr' with s : 1, ring }
     end
   ... ≤ (∑' (n : ℕ), (C * a ^ n : ennreal)) :
     tsum_le_tsum (λ n, by exact_mod_cast hC n) ennreal.summable ennreal.summable
