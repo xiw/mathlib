@@ -375,6 +375,10 @@ theorem radical_top : (radical ⊤ : ideal R) = ⊤ :=
 (eq_top_iff_one _).2 ⟨0, submodule.mem_top⟩
 variables {R}
 
+lemma radical_bot_of_integral_domain {R : Type u} [integral_domain R]
+  : radical (⊥ : ideal R) = ⊥ :=
+eq_bot_iff.2 (λ x hx, hx.rec_on (λ n hn, pow_eq_zero hn))
+
 theorem radical_mono (H : I ≤ J) : radical I ≤ radical J :=
 λ r ⟨n, hrni⟩, ⟨n, H hrni⟩
 

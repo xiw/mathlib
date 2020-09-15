@@ -4,8 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Devon Tuma
 -/
 import data.mv_polynomial
-import ring_theory.ideal.basic
-import ring_theory.ideal.operations
+import ring_theory.ideal.over
 import ring_theory.jacobson_ideal
 import ring_theory.localization
 
@@ -233,5 +232,111 @@ begin
 end
 
 end localization
+
+section polynomial
+open polynomial
+
+lemma bot_jacobson_polynomial (h : jacobson (⊥ : ideal R) = ⊥) :
+  jacobson (⊥ : ideal (polynomial R)) = ⊥ :=
+begin
+  have : (Inf (map C '' {J : ideal R | ⊥ ≤ J ∧ J.is_maximal}) : ideal (polynomial R)) = ⊥,
+  { rw eq_bot_iff,
+    intros f hf,
+    rw submodule.mem_bot,
+    ext,
+    rw coeff_zero,
+    suffices : f.coeff n ∈ ⊥, by rwa submodule.mem_bot at this,
+    rw [← h, ideal.jacobson],
+    rw mem_Inf at *,
+    intros j hj,
+    have : f ∈ (map C j : ideal (polynomial R)),
+    { refine hf _,
+      rw set.mem_image,
+      refine ⟨j, ⟨hj, rfl⟩⟩ },
+    rw mem_map_C_iff at this,
+    exact this n },
+  rw eq_bot_iff,
+  refine le_trans _ (le_of_eq this),
+  rw ideal.jacobson,
+  simp,
+  introsI J j hj hJ,
+  have : J.jacobson = J,
+  { rw [← hJ, jacobson_eq_iff_jacobson_quotient_eq_bot],
+    suffices : (⊥ : ideal (polynomial j.quotient)).jacobson = ⊥,
+    {
+      replace this := congr_arg (map (polynomial_quotient_equiv_quotient_polynomial j).to_ring_hom) this,
+      rwa [map_jacobson_of_bijective _, map_bot] at this,
+      exact (ring_equiv.bijective (polynomial_quotient_equiv_quotient_polynomial j))
+    },
+    rw eq_bot_iff,
+    intros f hf,
+    rw mem_jacobson_bot at hf,
+    specialize hf (X : polynomial (j.quotient)),
+    have hX : (X : polynomial j.quotient) ≠ 0 := λ hX, by simpa using congr_arg (λ f, coeff f 1) hX,
+    simpa [hX] using eq_C_of_degree_eq_zero (degree_eq_zero_of_is_unit hf) },
+  rw ← this,
+  refine Inf_le_Inf (λ a ha, ha.right),
+end
+
+lemma six {A B : Type*} [integral_domain A] [integral_domain B] [is_jacobson A]
+  (f : A →+* B) (hf : function.injective f)
+  {a : A} (ha : a ≠ ↑0)
+  (ha' : ∀ (x : localization (submonoid.powers (f a))), @is_integral A (localization (submonoid.powers (f a))) _ _
+    ((localization.of (submonoid.powers (f a))).to_map.comp f).to_algebra x)
+  : jacobson (⊥ : ideal B) = ⊥ :=
+begin
+  let Aₐ := localization (submonoid.powers a),
+  let ϕA := localization.of (submonoid.powers a),
+  let Bₐ := localization (submonoid.powers (f a)),
+  let ϕB := localization.of (submonoid.powers (f a)),
+  let g : A →+* Bₐ := ring_hom.comp ϕB.to_map f,
+  haveI hM : (submonoid.powers (f a)) ≤ non_zero_divisors B := by {
+    intros x hx,
+    rw mem_non_zero_divisors_iff_ne_zero,
+    rw submonoid.powers_eq_closure at hx,
+    rw submonoid.mem_closure_singleton at hx,
+    cases hx with n hn,
+    rw ← hn,
+    exact λ h, absurd (pow_eq_zero h) (λ h, ha (hf (trans h f.map_zero.symm))),
+  },
+  letI : integral_domain Bₐ := localization_map.integral_domain_localization hM,
+  have : ∀ y : (submonoid.powers a), f y ∈ submonoid.powers (f a), {
+    intros y,
+    cases y with y hy,
+    simp at hy ⊢,
+    rw submonoid.powers_eq_closure at hy ⊢,
+    erw submonoid.mem_closure_singleton at hy ⊢,
+    cases hy with n hn,
+    use n,
+    rw [← ring_hom.map_pow f a n, hn],
+  },
+  let fₐ : Aₐ →+* Bₐ := localization_map.map ϕA this ϕB,
+  haveI : is_jacobson Aₐ := is_jacobson_localization ϕA,
+  have hBₐ : is_jacobson Bₐ := sorry,
+  have hϕB : function.injective ϕB.to_map := localization_map.injective ϕB hM,
+  have : ∀ m : ideal Bₐ, is_maximal m → is_maximal (comap ϕB.to_map m), {
+    intros m hm,
+    letI : algebra A B := f.to_algebra,
+    letI : algebra B Bₐ := ϕB.to_map.to_algebra,
+    letI : algebra A Bₐ := (ϕB.to_map.comp f).to_algebra,
+    haveI tower : is_scalar_tower A B Bₐ :=
+      is_scalar_tower.of_algebra_map_eq (λ x, ring_hom.comp_apply ϕB.to_map f x),
+    refine @mid_max A B Bₐ _ _ _ m f.to_algebra ϕB.to_map.to_algebra (ϕB.to_map.comp f).to_algebra
+      tower hϕB ha' hm,
+  },
+  rw [ring_hom.injective_iff_ker_eq_bot, ring_hom.ker_eq_comap_bot] at hϕB,
+  rw eq_bot_iff,
+  refine le_trans _ (le_of_eq hϕB),
+  rw ← hBₐ ⊥ radical_bot_of_integral_domain,
+  dunfold ideal.jacobson,
+  rw [comap_Inf', Inf_eq_infi],
+  refine infi_le_infi_of_subset (λ j hj, ⟨bot_le, _⟩),
+  cases hj with J hJ,
+  rw ← hJ.right,
+  exact this J hJ.1.2,
+end
+
+end polynomial
+
 
 end ideal
