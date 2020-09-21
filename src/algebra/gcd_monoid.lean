@@ -140,12 +140,26 @@ variables [comm_cancel_monoid_with_zero α] [nontrivial α] [normalization_monoi
 
 local attribute [instance] associated.setoid
 
+@[simp] lemma mk_normalize (a : α) : associates.mk (normalize a) = associates.mk a :=
+by { rw mk_eq_mk_iff_associated, apply normalize_associated }
+
 /-- Maps an element of `associates` back to the normalized element of its associate class -/
 protected def out : associates α → α :=
 quotient.lift (normalize : α → α) $ λ a b ⟨u, hu⟩, hu ▸
 normalize_eq_normalize ⟨_, rfl⟩ (units.mul_right_dvd.2 $ dvd_refl a)
 
+@[simp]
 lemma out_mk (a : α) : (associates.mk a).out = normalize a := rfl
+
+@[simp]
+lemma mk_out (a : associates α) : associates.mk a.out = a :=
+begin
+  revert a,
+  rw forall_associated,
+  intro a,
+  rw [out_mk, mk_eq_mk_iff_associated],
+  apply normalize_associated,
+end
 
 @[simp] lemma out_one : (1 : associates α).out = 1 :=
 normalize_one
@@ -159,6 +173,10 @@ quotient.induction_on b $ by simp [associates.out_mk, associates.quotient_mk_eq_
 
 lemma out_dvd_iff (a : α) (b : associates α) : b.out ∣ a ↔ b ≤ associates.mk a :=
 quotient.induction_on b $ by simp [associates.out_mk, associates.quotient_mk_eq_mk, mk_le_mk_iff_dvd_iff]
+
+@[simp]
+lemma out_dvd_out (a b : associates α) : a.out ∣ b.out ↔ a ∣ b :=
+by rw [← mk_out a, ← mk_out b, mk_dvd_mk, mk_out, mk_out]
 
 @[simp] lemma out_top : (⊤ : associates α).out = 0 :=
 normalize_zero
@@ -677,8 +695,7 @@ begin
       associates.mk_eq_mk_iff_associated.2 $ associated.symm $ ⟨norm_unit a, _⟩),
     show normalize a = int.nat_abs (normalize a),
     rw [int.coe_nat_abs_eq_normalize, normalize_idem] },
-  { intro n, dsimp, rw [associates.out_mk ↑n,
-    ← int.coe_nat_abs_eq_normalize, int.nat_abs_of_nat, int.nat_abs_of_nat] }
+  { intro n, dsimp, rw [int.nat_abs_mul, int.nat_abs_of_nat], simp, }
 end
 
 lemma int.prime.dvd_mul {m n : ℤ} {p : ℕ}
@@ -730,3 +747,34 @@ instance normalization_monoid_of_unique_units : normalization_monoid α :=
 @[simp] lemma normalize_eq (x : α) : normalize x = x := mul_one x
 
 end unique_unit
+
+namespace associates
+
+variables [comm_cancel_monoid_with_zero α] [nontrivial α] [gcd_monoid α]
+
+instance : gcd_monoid (associates α) :=
+{ gcd := λ a b, associates.mk (gcd a.out b.out),
+  lcm := λ a b, associates.mk (lcm a.out b.out),
+  dvd_gcd := λ a b c ac ab, by { rw [← mk_out a, mk_dvd_mk], apply dvd_gcd; simpa, },
+  gcd_dvd_left := λ a b, by { rw [← mk_out a, mk_dvd_mk, mk_out], apply gcd_dvd_left },
+  gcd_dvd_right := λ a b, by { rw [← mk_out b, mk_dvd_mk, mk_out], apply gcd_dvd_right },
+  gcd_mul_lcm := λ a b, by { rw [mk_mul_mk, gcd_mul_lcm, monoid_hom.map_mul, ← mk_mul_mk], simp },
+  normalize_gcd := λ a b, normalize_eq _,
+  lcm_zero_left := λ a, by { simp only [mk_eq_zero, lcm_eq_zero_iff], left, apply out_top, },
+  lcm_zero_right := λ a, by { simp only [mk_eq_zero, lcm_eq_zero_iff], right, apply out_top, },
+  .. (infer_instance : normalization_monoid (associates α)) }
+
+instance : bounded_lattice (associates α) :=
+{ inf := gcd,
+  sup := lcm,
+  le_inf := λ a b c, dvd_gcd,
+  inf_le_left := gcd_dvd_left,
+  inf_le_right := gcd_dvd_right,
+  sup_le := λ a b c, lcm_dvd,
+  le_sup_left := dvd_lcm_left,
+  le_sup_right := dvd_lcm_right,
+  .. (infer_instance : order_bot (associates α)),
+  .. (infer_instance : order_top (associates α)),
+  .. (infer_instance : partial_order (associates α)) }
+
+end associates
