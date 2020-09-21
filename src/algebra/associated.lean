@@ -455,6 +455,14 @@ calc is_unit (associates.mk a) ↔ a ~ᵤ 1 :
     by rw [is_unit_iff_eq_one, one_eq_mk_one, mk_eq_mk_iff_associated]
   ... ↔ is_unit a : associated_one_iff_is_unit
 
+@[simp]
+theorem mk_unit {u : units α} : associates.mk (u : α) = 1 :=
+by { rw [← mk_one, mk_eq_mk_iff_associated, associated_one_iff_is_unit], exact is_unit_unit u }
+
+@[simp]
+lemma mk_mul_unit (a : α) (u : units α) : associates.mk (a * u) = associates.mk a :=
+by simp [← mk_mul_mk]
+
 section order
 
 theorem mul_mono {a b c d : associates α} (h₁ : a ≤ b) (h₂ : c ≤ d) :

@@ -140,9 +140,6 @@ variables [comm_cancel_monoid_with_zero α] [nontrivial α] [normalization_monoi
 
 local attribute [instance] associated.setoid
 
-@[simp] lemma mk_normalize (a : α) : associates.mk (normalize a) = associates.mk a :=
-by { rw mk_eq_mk_iff_associated, apply normalize_associated }
-
 /-- Maps an element of `associates` back to the normalized element of its associate class -/
 protected def out : associates α → α :=
 quotient.lift (normalize : α → α) $ λ a b ⟨u, hu⟩, hu ▸
