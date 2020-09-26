@@ -142,13 +142,28 @@ by simp [C, monomial, single_mul_single]
 @[simp] lemma C_pow (a : R) (n : ℕ) : (C (a^n) : mv_polynomial σ R) = (C a)^n :=
 by induction n; simp [pow_succ, *]
 
-lemma C_injective (σ : Type*) (R : Type*) [comm_ring R] :
+lemma C_injective (σ : Type*) (R : Type*) [comm_semiring R] :
   function.injective (C : R → mv_polynomial σ R) :=
 finsupp.single_injective _
 
-@[simp] lemma C_inj {σ : Type*} (R : Type*) [comm_ring R] (r s : R) :
+@[simp] lemma C_inj {σ : Type*} (R : Type*) [comm_semiring R] (r s : R) :
   (C r : mv_polynomial σ R) = C s ↔ r = s :=
 (C_injective σ R).eq_iff
+
+instance infinite_of_infinite (σ : Type*) (R : Type*) [comm_semiring R] [infinite R] :
+  infinite (mv_polynomial σ R) :=
+infinite.of_injective C (C_injective _ _)
+
+instance infinite_of_nonempty (σ : Type*) (R : Type*) [nonempty σ] [comm_semiring R] [nontrivial R] :
+  infinite (mv_polynomial σ R) :=
+infinite.of_injective (λ i : ℕ, monomial (single (classical.arbitrary σ) i) 1)
+begin
+  intros m n h,
+  have := (single_eq_single_iff _ _ _ _).mp h,
+  simp only [and_true, eq_self_iff_true, or_false, one_ne_zero, and_self,
+             single_eq_single_iff, eq_self_iff_true, true_and] at this,
+  rcases this with (rfl|⟨rfl, rfl⟩); refl
+end
 
 lemma C_eq_coe_nat (n : ℕ) : (C ↑n : mv_polynomial σ R) = n :=
 by induction n; simp [nat.succ_eq_add_one, *]
@@ -442,25 +457,22 @@ lemma exists_coeff_ne_zero {p : mv_polynomial σ R} (h : p ≠ 0) :
   ∃ d, coeff d p ≠ 0 :=
 ne_zero_iff.mp h
 
-lemma C_dvd_iff_dvd_coeff (r : α) (φ : mv_polynomial σ α) :
-  C r ∣ φ ↔ ∀ i, r ∣ (φ.coeff i) :=
+lemma C_dvd_iff_dvd_coeff (r : R) (φ : mv_polynomial σ R) :
+  C r ∣ φ ↔ ∀ i, r ∣ φ.coeff i :=
 begin
   split,
   { rintros ⟨φ, rfl⟩ c, rw coeff_C_mul, apply dvd_mul_right },
   { intro h,
     choose c hc using h,
     classical,
-    let c' : (σ →₀ ℕ) → α := λ i, if i ∈ φ.support then c i else 0,
-    let ψ : mv_polynomial σ α := ∑ i in φ.support, monomial i (c' i),
+    let c' : (σ →₀ ℕ) → R := λ i, if i ∈ φ.support then c i else 0,
+    let ψ : mv_polynomial σ R := ∑ i in φ.support, monomial i (c' i),
     use ψ,
     apply mv_polynomial.ext, intro i,
-    simp only [coeff_C_mul, coeff_sum, coeff_monomial],
-    rw [finset.sum_eq_single i, if_pos rfl],
-    { dsimp [c'], split_ifs with hi hi,
-      { rw hc },
-      { rw finsupp.not_mem_support_iff at hi, rwa [mul_zero] } },
-    { intros j hj hji, convert if_neg hji },
-    { intro hi, rw [if_pos rfl], exact if_neg hi } }
+    simp only [coeff_C_mul, coeff_sum, coeff_monomial, finset.sum_ite_eq', c'],
+    split_ifs with hi hi,
+    { rw hc },
+    { rw finsupp.not_mem_support_iff at hi, rwa mul_zero } },
 end
 
 end coeff
@@ -834,8 +846,8 @@ begin
 end
 
 lemma C_dvd_iff_map_hom_eq_zero
-  (q : α →+* β) (r : α) (hr : ∀ r' : α, q r' = 0 ↔ r ∣ r')
-  (φ : mv_polynomial σ α) :
+  (q : R →+* S₁) (r : R) (hr : ∀ r' : R, q r' = 0 ↔ r ∣ r')
+  (φ : mv_polynomial σ R) :
   C r ∣ φ ↔ map q φ = 0 :=
 begin
   rw [C_dvd_iff_dvd_coeff, mv_polynomial.ext_iff],
