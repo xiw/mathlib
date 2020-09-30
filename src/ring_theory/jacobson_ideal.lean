@@ -159,6 +159,10 @@ lemma map_jacobson_of_bijective {f : R →+* S} (hf : function.bijective f) {I :
 map_jacobson_of_surjective (hf.right)
   (le_trans (le_of_eq (f.injective_iff_ker_eq_bot.1 hf.left)) (bot_le))
 
+lemma comap_jacobson {f : R →+* S} {K : ideal S} :
+  comap f (K.jacobson) = Inf (comap f '' {J : ideal S | K ≤ J ∧ J.is_maximal}) :=
+trans (comap_Inf' f _) (Inf_eq_infi).symm
+
 theorem comap_jacobson_of_surjective {f : R →+* S} (hf : function.surjective f) {K : ideal S} :
   comap f (K.jacobson) = (comap f K).jacobson :=
 begin

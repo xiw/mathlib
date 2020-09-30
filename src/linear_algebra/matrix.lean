@@ -6,6 +6,7 @@ Author: Johannes Hölzl, Patrick Massot, Casper Putz
 import linear_algebra.finite_dimensional
 import linear_algebra.nonsingular_inverse
 import linear_algebra.multilinear
+import linear_algebra.dual
 
 /-!
 # Linear maps and matrices
@@ -101,7 +102,7 @@ theorem to_lin_of_equiv {p q : Type*} [fintype p] [fintype q] (e₁ : m ≃ p) (
 linear_map.ext $ λ v, funext $ λ i,
 calc  ∑ j : n, f (e₁ i) (e₂ j) * v j
     = ∑ j : n, f (e₁ i) (e₂ j) * v (e₂.symm (e₂ j)) : by simp_rw e₂.symm_apply_apply
-... = ∑ k : q, f (e₁ i) k * v (e₂.symm k) : finset.sum_equiv e₂ (λ k, f (e₁ i) k * v (e₂.symm k))
+... = ∑ k : q, f (e₁ i) k * v (e₂.symm k) : e₂.sum_comp (λ k, f (e₁ i) k * v (e₂.symm k))
 
 lemma to_lin_add (M N : matrix m n R) : (M + N).to_lin = M.to_lin + N.to_lin :=
 matrix.eval.map_add M N
@@ -214,6 +215,9 @@ def linear_equiv_matrix' : ((n → R) →ₗ[R] (m → R)) ≃ₗ[R] matrix m n 
 @[simp] lemma linear_equiv_matrix'_apply (f : (n → R) →ₗ[R] (m → R)) :
   linear_equiv_matrix' f = to_matrix f := rfl
 
+@[simp] lemma linear_equiv_matrix'_symm_apply (M : matrix m n R) :
+  linear_equiv_matrix'.symm M = M.to_lin := rfl
+
 variables {ι κ M₁ M₂ : Type*}
   [add_comm_group M₁] [module R M₁]
   [add_comm_group M₂] [module R M₂]
@@ -234,6 +238,11 @@ by simp only [linear_equiv_matrix, to_matrix, to_matrixₗ, ite_smul,
   linear_equiv.trans_apply, linear_equiv.arrow_congr_apply,
   linear_equiv.coe_coe, linear_equiv_matrix'_apply, finset.mem_univ, if_true,
   one_smul, zero_smul, finset.sum_ite_eq, hv₁.equiv_fun_symm_apply]
+
+lemma linear_equiv_matrix_symm_apply (m : matrix κ ι R) (x : M₁) :
+  (linear_equiv_matrix hv₁ hv₂).symm m x = hv₂.equiv_fun.symm (m.to_lin $ hv₁.equiv_fun x) :=
+by simp only [linear_equiv_matrix, linear_equiv.arrow_congr_symm_apply,
+    linear_equiv_matrix'_symm_apply, linear_equiv.symm_trans_apply]
 
 lemma linear_equiv_matrix_apply' (f : M₁ →ₗ[R] M₂) (i : κ) (j : ι) :
   linear_equiv_matrix hv₁ hv₂ f i j = hv₂.repr (f (v₁ j)) i :=
@@ -266,9 +275,9 @@ begin
   refine function.left_inverse.injective linear_equiv.symm_symm _; ext x;
   simp_rw [linear_equiv.symm_trans_apply, is_basis.equiv_fun_symm_apply, fun_congr_left_symm,
     fun_congr_left_apply, fun_left_apply],
-  convert (finset.sum_equiv (equiv.of_injective _ hv₁.injective) _).symm,
+  convert ((equiv.of_injective _ hv₁.injective).sum_comp _).symm,
   simp_rw [equiv.symm_apply_apply, equiv.of_injective_apply, subtype.coe_mk],
-  convert (finset.sum_equiv (equiv.of_injective _ hv₂.injective) _).symm,
+  convert ((equiv.of_injective _ hv₂.injective).sum_comp _).symm,
   simp_rw [equiv.symm_apply_apply, equiv.of_injective_apply, subtype.coe_mk]
 end
 
@@ -465,6 +474,40 @@ end
 
 end det
 
+section transpose
+
+variables {K V₁ V₂ ι₁ ι₂ : Type*} [field K]
+          [add_comm_group V₁] [vector_space K V₁]
+          [add_comm_group V₂] [vector_space K V₂]
+          [fintype ι₁] [fintype ι₂] [decidable_eq ι₁] [decidable_eq ι₂]
+          {B₁ : ι₁ → V₁} (h₁ : is_basis K B₁)
+          {B₂ : ι₂ → V₂} (h₂ : is_basis K B₂)
+
+@[simp] lemma linear_equiv_matrix_transpose (u : V₁ →ₗ[K] V₂) :
+  linear_equiv_matrix h₂.dual_basis_is_basis h₁.dual_basis_is_basis (module.dual.transpose u) =
+  (linear_equiv_matrix h₁ h₂ u)ᵀ :=
+begin
+  ext i j,
+  simp only [linear_equiv_matrix_apply, module.dual.transpose_apply, h₁.dual_basis_equiv_fun,
+             h₂.dual_basis_apply, matrix.transpose_apply, linear_map.comp_apply]
+end
+
+lemma linear_equiv_matrix_symm_transpose (M : matrix ι₁ ι₂ K) :
+  (linear_equiv_matrix h₁.dual_basis_is_basis h₂.dual_basis_is_basis).symm Mᵀ =
+  module.dual.transpose ((linear_equiv_matrix h₂ h₁).symm M) :=
+begin
+  apply (linear_equiv_matrix h₁.dual_basis_is_basis h₂.dual_basis_is_basis).injective,
+  rw [linear_equiv.apply_symm_apply],
+  ext i j,
+  simp only [linear_equiv_matrix_apply, module.dual.transpose_apply, h₂.dual_basis_equiv_fun,
+    h₁.dual_basis_apply, matrix.transpose_apply, linear_map.comp_apply, if_true,
+    linear_equiv_matrix_symm_apply, linear_equiv.map_smul, mul_boole, algebra.id.smul_eq_mul,
+    linear_equiv.map_sum, is_basis.equiv_fun_self, fintype.sum_apply, finset.sum_ite_eq',
+    finset.sum_ite_eq, is_basis.equiv_fun_symm_apply, pi.smul_apply, matrix.to_lin_apply,
+    matrix.mul_vec, matrix.dot_product, is_basis.equiv_fun_self, finset.mem_univ]
+end
+
+end transpose
 namespace matrix
 
 section trace
@@ -752,7 +795,7 @@ linear_map.ext $ λ f, if H : 0 = 1 then eq_of_zero_eq_one H _ _ else
 begin
   haveI : nontrivial R := ⟨⟨0, 1, H⟩⟩,
   change ∑ i : set.range b, _ = ∑ i : ι, _, simp_rw [matrix.diag_apply], symmetry,
-  convert finset.sum_equiv (equiv.of_injective _ hb.injective) _, ext i,
+  convert (equiv.of_injective _ hb.injective).sum_comp _, ext i,
   exact (linear_equiv_matrix_range hb hb f i i).symm
 end
 
@@ -787,6 +830,37 @@ if H : ∃ s : finset M, is_basis R (λ x, x : (↑s : set M) → M) then let �
 by { simp_rw [trace_eq_matrix_trace R hb, matrix.linear_equiv_matrix_mul], apply matrix.trace_mul_comm }
 else by rw [trace, dif_neg H, linear_map.zero_apply, linear_map.zero_apply]
 
+section finite_dimensional
+
+variables {K : Type*} [field K]
+variables {V : Type*} [add_comm_group V] [vector_space K V] [finite_dimensional K V]
+variables {W : Type*} [add_comm_group W] [vector_space K W] [finite_dimensional K W]
+
+instance : finite_dimensional K (V →ₗ[K] W) :=
+begin
+  classical,
+  cases finite_dimensional.exists_is_basis_finset K V with bV hbV,
+  cases finite_dimensional.exists_is_basis_finset K W with bW hbW,
+  apply linear_equiv.finite_dimensional (linear_equiv_matrix hbV hbW).symm,
+end
+
+/--
+The dimension of the space of linear transformations is the product of the dimensions of the
+domain and codomain.
+-/
+@[simp] lemma findim_linear_map :
+  finite_dimensional.findim K (V →ₗ[K] W) =
+  (finite_dimensional.findim K V) * (finite_dimensional.findim K W) :=
+begin
+  classical,
+  cases finite_dimensional.exists_is_basis_finset K V with bV hbV,
+  cases finite_dimensional.exists_is_basis_finset K W with bW hbW,
+  rw [linear_equiv.findim_eq (linear_equiv_matrix hbV hbW), matrix.findim_matrix,
+    finite_dimensional.findim_eq_card_basis hbV, finite_dimensional.findim_eq_card_basis hbW,
+    mul_comm],
+end
+
+end finite_dimensional
 end linear_map
 
 /-- The natural equivalence between linear endomorphisms of finite free modules and square matrices
