@@ -277,33 +277,27 @@ begin
     rw [← h, ideal.jacobson],
     rw mem_Inf at *,
     intros j hj,
-    have : f ∈ (map C j : ideal (polynomial R)),
-    { refine hf _,
-      rw set.mem_image,
-      refine ⟨j, ⟨hj, rfl⟩⟩ },
+    have : f ∈ (map C j : ideal (polynomial R)) := hf ⟨j, ⟨hj, rfl⟩⟩,
     rw mem_map_C_iff at this,
     exact this n },
   rw eq_bot_iff,
   refine le_trans _ (le_of_eq this),
-  rw ideal.jacobson,
-  simp,
+  simp only [ideal.jacobson, true_and, and_imp, set.mem_image, bot_le, le_Inf_iff, set.mem_set_of_eq, exists_imp_distrib],
   introsI J j hj hJ,
   have : J.jacobson = J,
   { rw [← hJ, jacobson_eq_iff_jacobson_quotient_eq_bot],
     suffices : (⊥ : ideal (polynomial j.quotient)).jacobson = ⊥,
-    {
-      replace this := congr_arg (map (polynomial_quotient_equiv_quotient_polynomial j).to_ring_hom) this,
+    { replace this := congr_arg (map (polynomial_quotient_equiv_quotient_polynomial j).to_ring_hom) this,
       rwa [map_jacobson_of_bijective _, map_bot] at this,
-      exact (ring_equiv.bijective (polynomial_quotient_equiv_quotient_polynomial j))
-    },
+      exact (ring_equiv.bijective (polynomial_quotient_equiv_quotient_polynomial j)) },
     rw eq_bot_iff,
     intros f hf,
     rw mem_jacobson_bot at hf,
     specialize hf (X : polynomial (j.quotient)),
     have hX : (X : polynomial j.quotient) ≠ 0 := λ hX, by simpa using congr_arg (λ f, coeff f 1) hX,
     simpa [hX] using eq_C_of_degree_eq_zero (degree_eq_zero_of_is_unit hf) },
-  rw ← this,
-  refine Inf_le_Inf (λ a ha, ha.right),
+  refine le_trans _ (le_of_eq this),
+  refine Inf_le_Inf (λ a ha, ha.2),
 end
 
 
@@ -321,29 +315,23 @@ begin
   letI : algebra Aₐ Bₐ := localization_algebra _ ϕA ϕB,
   haveI tower : is_scalar_tower A B Bₐ :=
     is_scalar_tower.of_algebra_map_eq (λ x, ring_hom.comp_apply ϕB.to_map (algebra_map A B) x),
-
   have hM : (submonoid.map ↑(algebra_map A B) (submonoid.powers a)) ≤ non_zero_divisors B :=
     map_le_non_zero_divisors_of_injective hf (powers_le_non_zero_divisors_of_domain ha),
   letI : integral_domain Bₐ := localization_map.integral_domain_localization hM,
   have hϕB : function.injective ϕB.to_map := localization_map.injective ϕB hM,
-
   have hAB : algebra.is_integral A B := λ x, is_integral_tower_bot_of_is_integral hϕB (hABₐ _),
   have hAₐBₐ : algebra.is_integral Aₐ Bₐ := is_integral_localization ϕA ϕB hAB,
   have hBₐ : is_jacobson Bₐ := is_jacobson_of_is_integral hAₐBₐ (is_jacobson_localization ϕA),
 
+  -- Everything before here kinda just sets up instances and properties of them
   rw [ring_hom.injective_iff_ker_eq_bot, ring_hom.ker_eq_comap_bot] at hϕB,
-  rw eq_bot_iff,
-  refine le_trans _ (le_of_eq hϕB),
-  rw ← hBₐ ⊥ radical_bot_of_integral_domain,
-  dunfold ideal.jacobson,
-  rw [comap_Inf', Inf_eq_infi],
-  refine infi_le_infi_of_subset (λ j hj, ⟨bot_le, _⟩),
-
+  refine eq_bot_iff.2 (le_trans _ (le_of_eq hϕB)),
+  rw [← hBₐ ⊥ radical_bot_of_integral_domain, comap_jacobson],
+  refine Inf_le_Inf (λ j hj, ⟨bot_le, _⟩),
   cases hj with J hJ,
   haveI : J.is_maximal := hJ.1.2,
-  rw ← hJ.2,
-  refine is_maximal_comap_of_is_integral_of_is_maximal _ _,
-  refine λ x, is_integral_tower_top_of_is_integral (hABₐ x),
+  refine hJ.2 ▸ is_maximal_comap_of_is_integral_of_is_maximal
+    (λ x, is_integral_tower_top_of_is_integral (hABₐ x)) _,
 end
 
 theorem is_jacobson_polynomial_iff_is_jacobson : is_jacobson R ↔ is_jacobson (polynomial R) :=
