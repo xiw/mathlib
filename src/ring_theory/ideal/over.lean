@@ -162,19 +162,18 @@ begin
     algebra_map_quotient_injective (by rwa ← quotient.maximal_ideal_iff_is_field_quotient),
 end
 
-lemma mid_max {A B C : Type*} [comm_ring A] [integral_domain B] [integral_domain C] {m : ideal C}
+lemma mid_max {A B C : Type*} [comm_ring A] [integral_domain B] [integral_domain C]
   [algebra A B] [algebra B C] [algebra A C] [is_scalar_tower A B C]
-  (hBC : function.injective (algebra_map B C))
-  (H : ∀ x : C, is_integral A x)
-  : ideal.is_maximal m → ideal.is_maximal (ideal.comap (algebra_map B C) m) :=
+  (hBC : function.injective (algebra_map B C)) (H : algebra.is_integral A C)
+  {m : ideal C} [ideal.is_maximal m] :
+  ideal.is_maximal (ideal.comap (algebra_map B C) m) :=
 begin
-  introsI h,
+  haveI : (comap (algebra_map B C) m).is_prime := comap_is_prime _ m,
   have h' : ideal.is_maximal (ideal.comap (algebra_map A C) m) :=
     is_maximal_comap_of_is_integral_of_is_maximal H m,
-  haveI : (comap (algebra_map B C) m).is_prime := comap_is_prime _ m,
   rw is_scalar_tower.algebra_map_eq A B C at h',
-  refine is_maximal_of_is_integral_of_is_maximal_comap _ _ h',
-  refine λ x, is_integral_tower_bot_of_is_integral hBC (H _),
+  refine is_maximal_of_is_integral_of_is_maximal_comap
+    (λ x, is_integral_tower_bot_of_is_integral hBC (H _)) _ h',
 end
 
 lemma integral_closure.comap_ne_bot [nontrivial R] {I : ideal (integral_closure R S)}
