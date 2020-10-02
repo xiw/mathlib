@@ -249,6 +249,9 @@ def subtype (s : subring R) : s →+* R :=
 
 @[simp] theorem coe_subtype : ⇑s.subtype = coe := rfl
 
+lemma subtype_injective (s : subring R) : function.injective s.subtype :=
+subtype.coe_injective
+
 /-! # Partial order -/
 
 instance : partial_order (subring R) :=
@@ -639,6 +642,9 @@ def range_restrict (f : R →+* S) : R →+* f.range :=
 f.cod_restrict' f.range $ λ x, ⟨x, subring.mem_top x, rfl⟩
 
 @[simp] lemma coe_range_restrict (f : R →+* S) (x : R) : (f.range_restrict x : S) = f x := rfl
+
+lemma range_restrict_surjective (f : R →+* S) : function.surjective (range_restrict f) :=
+surjective_onto_range f
 
 lemma range_top_iff_surjective {f : R →+* S} :
   f.range = (⊤ : subring S) ↔ function.surjective f :=

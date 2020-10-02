@@ -264,44 +264,32 @@ end localization
 section polynomial
 open polynomial
 
-lemma bot_jacobson_polynomial (h : jacobson (⊥ : ideal R) = ⊥) :
-  jacobson (⊥ : ideal (polynomial R)) = ⊥ :=
+lemma jacobson_bot_polynomial_le_Inf_map_maximal :
+  jacobson (⊥ : ideal (polynomial R)) ≤ Inf (map C '' {J : ideal R | J.is_maximal}) :=
 begin
-  have : (Inf (map C '' {J : ideal R | ⊥ ≤ J ∧ J.is_maximal}) : ideal (polynomial R)) = ⊥,
-  { rw eq_bot_iff,
-    intros f hf,
-    rw submodule.mem_bot,
-    ext,
-    rw coeff_zero,
-    suffices : f.coeff n ∈ ⊥, by rwa submodule.mem_bot at this,
-    rw [← h, ideal.jacobson],
-    rw mem_Inf at *,
-    intros j hj,
-    have : f ∈ (map C j : ideal (polynomial R)) := hf ⟨j, ⟨hj, rfl⟩⟩,
-    rw mem_map_C_iff at this,
-    exact this n },
-  rw eq_bot_iff,
-  refine le_trans _ (le_of_eq this),
-  simp only [ideal.jacobson, true_and, and_imp, set.mem_image, bot_le, le_Inf_iff, set.mem_set_of_eq, exists_imp_distrib],
-  introsI J j hj hJ,
-  have : J.jacobson = J,
-  { rw [← hJ, jacobson_eq_iff_jacobson_quotient_eq_bot],
-    suffices : (⊥ : ideal (polynomial j.quotient)).jacobson = ⊥,
-    { replace this := congr_arg (map (polynomial_quotient_equiv_quotient_polynomial j).to_ring_hom) this,
-      rwa [map_jacobson_of_bijective _, map_bot] at this,
-      exact (ring_equiv.bijective (polynomial_quotient_equiv_quotient_polynomial j)) },
-    rw eq_bot_iff,
-    intros f hf,
-    rw mem_jacobson_bot at hf,
-    specialize hf (X : polynomial (j.quotient)),
-    have hX : (X : polynomial j.quotient) ≠ 0 := λ hX, by simpa using congr_arg (λ f, coeff f 1) hX,
-    simpa [hX] using eq_C_of_degree_eq_zero (degree_eq_zero_of_is_unit hf) },
-  refine le_trans _ (le_of_eq this),
-  refine Inf_le_Inf (λ a ha, ha.2),
+  refine le_Inf (λ J, exists_imp_distrib.2 (λ j hj, _)),
+  haveI : j.is_maximal := hj.1,
+  refine trans (jacobson_mono bot_le) (le_of_eq _ : J.jacobson ≤ J),
+  suffices : (⊥ : ideal (polynomial j.quotient)).jacobson = ⊥,
+  { rw [← hj.2, jacobson_eq_iff_jacobson_quotient_eq_bot],
+    replace this := congr_arg (map (polynomial_quotient_equiv_quotient_polynomial j).to_ring_hom) this,
+    rwa [map_jacobson_of_bijective _, map_bot] at this,
+    exact (ring_equiv.bijective (polynomial_quotient_equiv_quotient_polynomial j)) },
+  refine eq_bot_iff.2 (λ f hf, _),
+  simpa [(λ hX, by simpa using congr_arg (λ f, coeff f 1) hX : (X : polynomial j.quotient) ≠ 0)]
+    using eq_C_of_degree_eq_zero (degree_eq_zero_of_is_unit ((mem_jacobson_bot.1 hf) X)),
 end
 
+lemma jacobson_bot_polynomial_of_jacobson_bot (h : jacobson (⊥ : ideal R) = ⊥) :
+  jacobson (⊥ : ideal (polynomial R)) = ⊥ :=
+begin
+  refine eq_bot_iff.2 (le_trans jacobson_bot_polynomial_le_Inf_map_maximal _),
+  refine (λ f hf, ((submodule.mem_bot _).2 (polynomial.ext (λ n, trans _ (coeff_zero n).symm)))),
+  suffices : f.coeff n ∈ ideal.jacobson ⊥, by rwa [h, submodule.mem_bot] at this,
+  exact mem_Inf.2 (λ j hj, (mem_map_C_iff.1 ((mem_Inf.1 hf) ⟨j, ⟨hj.2, rfl⟩⟩)) n),
+end
 
-lemma six' {A B : Type*} [integral_domain A] [integral_domain B] [is_jacobson A]
+lemma technical_lemma {A B : Type*} [integral_domain A] [integral_domain B] [is_jacobson A]
   [algebra A B] (hf : function.injective (algebra_map A B))
   {a : A} (ha : a ≠ ↑0)
   (hABₐ : (((localization.of (submonoid.map (algebra_map A B : A →* B) (submonoid.powers a))).to_map.comp (algebra_map A B)).is_integral))
@@ -319,11 +307,11 @@ begin
     map_le_non_zero_divisors_of_injective hf (powers_le_non_zero_divisors_of_domain ha),
   letI : integral_domain Bₐ := localization_map.integral_domain_localization hM,
   have hϕB : function.injective ϕB.to_map := localization_map.injective ϕB hM,
-  have hAB : algebra.is_integral A B := λ x, is_integral_tower_bot_of_is_integral hϕB (hABₐ _),
-  have hAₐBₐ : algebra.is_integral Aₐ Bₐ := is_integral_localization ϕA ϕB hAB,
-  have hBₐ : is_jacobson Bₐ := is_jacobson_of_is_integral hAₐBₐ (is_jacobson_localization ϕA),
+  have hBₐ : is_jacobson Bₐ := is_jacobson_of_is_integral
+    (is_integral_localization ϕA ϕB (λ x, is_integral_tower_bot_of_is_integral hϕB (hABₐ _)))
+    (is_jacobson_localization ϕA),
 
-  -- Everything before here kinda just sets up instances and properties of them
+  -- Everything before here kinda just sets up instances and properties of them, below is the proof
   rw [ring_hom.injective_iff_ker_eq_bot, ring_hom.ker_eq_comap_bot] at hϕB,
   refine eq_bot_iff.2 (le_trans _ (le_of_eq hϕB)),
   rw [← hBₐ ⊥ radical_bot_of_integral_domain, comap_jacobson],
@@ -340,18 +328,11 @@ begin
   { rw is_jacobson_iff_prime_eq,
     introsI I hI,
     rw jacobson_eq_iff_jacobson_quotient_eq_bot,
-    let R' := set.range ((quotient.mk I).comp C),
-    let ϕ : R →+* R' := ((quotient.mk I).comp C).cod_restrict R' (set.mem_range_self),
-    have hϕ : function.surjective ϕ,
-    { rintro ⟨⟨x⟩, hx⟩,
-      cases hx with y hy,
-      use y,
-      refine subtype.eq _,
-      simp,
-      exact hy },
-    haveI : is_subring R' := ring_hom.is_subring_set_range ((quotient.mk I).comp C),
+    let R' := ((quotient.mk I).comp C).range,
+    let ϕ := ((quotient.mk I).comp C).range_restrict,
+    have hϕ : function.surjective ϕ := ((quotient.mk I).comp C).range_restrict_surjective,
     haveI hR' : is_jacobson R' := is_jacobson_of_surjective ⟨ϕ, hϕ⟩,
-    let ϕ' : (polynomial R') →+* I.quotient := eval₂_ring_hom (is_subring.subtype R') (quotient.mk I X),
+    let ϕ' : (polynomial R') →+* I.quotient := eval₂_ring_hom R'.subtype (quotient.mk I X),
     have hϕ'_sur : function.surjective ϕ',
     { rintro ⟨f⟩,
       use eval₂ (ring_hom.comp (C : R' →+* polynomial R') ϕ) X f,
@@ -359,14 +340,12 @@ begin
       { simp_intros p q hp hq,
         rw [hp, hq] },
       { intros n a,
-        rw [eval₂_monomial (C.comp ϕ), monomial_eq_smul_X, ← C_mul' a (X ^ n)],
-        simp,
-        refl } },
+        simp [eval₂_monomial (C.comp ϕ), monomial_eq_smul_X, ← C_mul' a (X ^ n)] } },
     by_cases hϕ'_inj : function.injective ϕ',
     { suffices : (⊥ : ideal (polynomial R')).jacobson = ⊥,
       { have := congr_arg (map ϕ') this,
         rwa [map_jacobson_of_bijective ⟨hϕ'_inj, hϕ'_sur⟩, map_bot] at this },
-      exact bot_jacobson_polynomial (hR' ⊥ radical_bot_of_integral_domain) },
+      exact jacobson_bot_polynomial_of_jacobson_bot (hR' ⊥ radical_bot_of_integral_domain) },
     {
       have : ∃ f ∈ (ϕ').ker, degree f > 0, {
         contrapose! hϕ'_inj,
@@ -374,8 +353,9 @@ begin
       },
       rcases this with ⟨f, hfI, hf⟩,
       let a := f.leading_coeff,
-      have : a ≠ 0 := sorry,
-      -- refine six (is_subring.subtype R') subtype.coe_injective this _,
+      have ha : a ≠ 0 := sorry,
+      letI : algebra R' I.quotient := R'.subtype.to_algebra,
+      refine technical_lemma R'.subtype_injective ha _,
       sorry,
     }
   },
