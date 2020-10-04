@@ -432,134 +432,43 @@ dvd_antisymm_of_normalize_eq (normalize_lcm _ _) (normalize_lcm _ _)
 
 end lcm
 
-section coprime
-
-/-- Two elements of a `gcd_monoid` are coprime if their `gcd` is 1. -/
-def coprime (a b : α) : Prop := gcd a b = 1
-
-theorem coprime.gcd_eq_one {m n : α} : coprime m n → gcd m n = 1 := id
-
-theorem coprime.symm {m n : α} : coprime n m → coprime m n := (gcd_comm m n).trans
-
-theorem coprime_of_dvd {m n : α} (H : ∀ k, k ∣ m → k ∣ n → k ∣ 1) : coprime m n :=
+/-- Represent a divisor of `m * n` as a product of a divisor of `m` and a divisor of `n`. -/
+noncomputable def prod_dvd_and_dvd_of_dvd_prod {m n k : α} (H : k ∣ m * n) :
+  { d : {m' // m' ∣ m} × {n' // n' ∣ n} // k = d.1 * d.2 } :=
 begin
-  rw [coprime, ← normalize_gcd, normalize_eq_one, is_unit_iff_dvd_one],
-  apply H _ (gcd_dvd_left _ _) (gcd_dvd_right _ _),
+  by_cases h0 : gcd k m = 0,
+  { rw gcd_eq_zero_iff at h0,
+    rcases h0 with ⟨rfl, rfl⟩,
+    refine ⟨⟨⟨0, dvd_refl 0⟩, ⟨n, dvd_refl n⟩⟩, _⟩,
+    simp },
+  { let a := classical.some (gcd_dvd_left k m),
+    refine ⟨⟨⟨gcd k m, gcd_dvd_right _ _⟩, ⟨a, _⟩⟩, classical.some_spec (gcd_dvd_left k m)⟩,
+    suffices h : gcd k m * a ∣ gcd k m * n,
+    { cases h with b hb,
+      use b,
+      rw mul_assoc at hb,
+      apply mul_left_cancel' h0 hb },
+    rw ← classical.some_spec (gcd_dvd_left k m),
+    transitivity gcd k m * normalize n,
+    { rw ← gcd_mul_right,
+      exact dvd_gcd (dvd_mul_right _ _) H },
+    { apply dvd.intro ↑(norm_unit n)⁻¹,
+      rw [normalize_apply, mul_assoc, mul_assoc, ← units.coe_mul],
+      simp } }
 end
 
-theorem is_unit.coprime_left {m : α} (h : is_unit m) (n : α) : coprime m n :=
-coprime_of_dvd $ λ k km _, dvd_trans km (is_unit_iff_dvd_one.1 h)
-
-theorem is_unit.coprime_right {m : α} (h : is_unit m) (n : α) : coprime n m :=
-(h.coprime_left n).symm
-
-theorem coprime.dvd_of_dvd_mul_right {m n k : α} (H1 : coprime k n) (H2 : k ∣ m * n) : k ∣ m :=
-let t := dvd_gcd (dvd_mul_left k m) H2 in
-by rwa [gcd_mul_left, H1.gcd_eq_one, mul_one, dvd_normalize_iff] at t
-
-theorem coprime.dvd_of_dvd_mul_left {m n k : α} (H1 : coprime k m) (H2 : k ∣ m * n) : k ∣ n :=
-by rw mul_comm at H2; exact H1.dvd_of_dvd_mul_right H2
-
-theorem coprime.gcd_mul_left_cancel {k : α} (m : α) {n : α} (H : coprime k n) :
-   gcd (k * m) n = gcd m n :=
-have H1 : coprime (gcd (k * m) n) k,
-by rw [coprime, gcd_assoc, H.symm.gcd_eq_one, gcd_one_right],
-dvd_antisymm_of_normalize_eq (normalize_gcd _ _) (normalize_gcd _ _)
-  (dvd_gcd (H1.dvd_of_dvd_mul_left (gcd_dvd_left _ _)) (gcd_dvd_right _ _))
-  (gcd_dvd_gcd_mul_left _ _ _)
-
-theorem coprime.gcd_mul_right_cancel (m : α) {k n : α} (H : coprime k n) :
-   gcd (m * k) n = gcd m n :=
-by rw [mul_comm m k, H.gcd_mul_left_cancel m]
-
-theorem coprime.gcd_mul_left_cancel_right {k m : α} (n : α) (H : coprime k m) :
-   gcd m (k * n) = gcd m n :=
-by rw [gcd_comm m n, gcd_comm m (k * n), H.gcd_mul_left_cancel n]
-
-theorem coprime.gcd_mul_right_cancel_right {k m : α} (n : α) (H : coprime k m) :
-   gcd m (n * k) = gcd m n :=
-by rw [mul_comm n k, H.gcd_mul_left_cancel_right n]
-
-theorem coprime.mul {m n k : α} (H1 : coprime m k) (H2 : coprime n k) : coprime (m * n) k :=
-(H1.gcd_mul_left_cancel n).trans H2
-
-theorem coprime.mul_right {k m n : α} (H1 : coprime k m) (H2 : coprime k n) : coprime k (m * n) :=
-(H1.symm.mul H2.symm).symm
-
-theorem coprime.coprime_dvd_left {m k n : α} (H1 : m ∣ k) (H2 : coprime k n) : coprime m n :=
+theorem gcd_mul_dvd_mul_gcd (k m n : α) : gcd k (m * n) ∣ gcd k m * gcd k n :=
 begin
-  rw [coprime, ← normalize_gcd, normalize_eq_one, is_unit_iff_dvd_one, ← H2.gcd_eq_one],
-  apply gcd_dvd_gcd H1 (dvd_refl n),
+  rcases (prod_dvd_and_dvd_of_dvd_prod $ gcd_dvd_right k (m * n)) with ⟨⟨⟨m', hm'⟩, ⟨n', hn'⟩⟩, h⟩,
+  replace h : gcd k (m * n) = m' * n' := h,
+  rw h,
+  have hm'n' : m' * n' ∣ k := h ▸ gcd_dvd_left _ _,
+  apply mul_dvd_mul,
+    { have hm'k : m' ∣ k := dvd_trans (dvd_mul_right m' n') hm'n',
+      exact dvd_gcd hm'k hm' },
+    { have hn'k : n' ∣ k := dvd_trans (dvd_mul_left n' m') hm'n',
+      exact dvd_gcd hn'k hn' }
 end
-
-theorem coprime.coprime_dvd_right {m k n : α} (H1 : n ∣ m) (H2 : coprime k m) : coprime k n :=
-(H2.symm.coprime_dvd_left H1).symm
-
-theorem coprime.coprime_mul_left {k m n : α} (H : coprime (k * m) n) : coprime m n :=
-H.coprime_dvd_left (dvd_mul_left _ _)
-
-theorem coprime.coprime_mul_right {k m n : α} (H : coprime (m * k) n) : coprime m n :=
-H.coprime_dvd_left (dvd_mul_right _ _)
-
-theorem coprime.coprime_mul_left_right {k m n : α} (H : coprime m (k * n)) : coprime m n :=
-H.coprime_dvd_right (dvd_mul_left _ _)
-
-theorem coprime.coprime_mul_right_right {k m n : α} (H : coprime m (n * k)) : coprime m n :=
-H.coprime_dvd_right (dvd_mul_right _ _)
-
-lemma coprime_mul_iff_left {k m n : α} : coprime (m * n) k ↔ coprime m k ∧ coprime n k :=
-⟨λ h, ⟨coprime.coprime_mul_right h, coprime.coprime_mul_left h⟩,
-  λ ⟨h, _⟩, by rwa [coprime, coprime.gcd_mul_left_cancel n h]⟩
-
-lemma coprime_mul_iff_right {k m n : α} : coprime k (m * n) ↔ coprime k m ∧ coprime k n :=
-by { repeat { rw [coprime, gcd_comm k] }, exact coprime_mul_iff_left }
-
-lemma coprime.gcd_left (k : α) {m n : α} (hmn : coprime m n) : coprime (gcd k m) n :=
-hmn.coprime_dvd_left $ gcd_dvd_right k m
-
-lemma coprime.gcd_right (k : α) {m n : α} (hmn : coprime m n) : coprime m (gcd k n) :=
-hmn.coprime_dvd_right $ gcd_dvd_right k n
-
-lemma coprime.gcd_both (k l : α) {m n : α} (hmn : coprime m n) : coprime (gcd k m) (gcd l n) :=
-(hmn.gcd_left k).gcd_right l
-
-lemma coprime.mul_dvd_of_dvd_of_dvd {a n m : α} (hmn : coprime m n)
-  (hm : m ∣ a) (hn : n ∣ a) : m * n ∣ a :=
-let ⟨k, hk⟩ := hm in hk.symm ▸ mul_dvd_mul_left _ (hmn.symm.dvd_of_dvd_mul_left (hk ▸ hn))
-
-theorem coprime_one_left : ∀ n, coprime (1 : α) n := gcd_one_left
-
-theorem coprime_one_right : ∀ n, coprime n (1 : α) := gcd_one_right
-
-theorem coprime.pow_left {m k : α} (n : ℕ) (H1 : coprime m k) : coprime (m ^ n) k :=
-nat.rec_on n (coprime_one_left _) (λn IH, H1.mul IH)
-
-theorem coprime.pow_right {m k : α} (n : ℕ) (H1 : coprime k m) : coprime k (m ^ n) :=
-(H1.symm.pow_left n).symm
-
-theorem coprime.pow {k l : α} (m n : ℕ) (H1 : coprime k l) : coprime (k ^ m) (l ^ n) :=
-(H1.pow_left _).pow_right _
-
-theorem coprime.is_unit_of_dvd {k m : α} (H : coprime k m) (d : k ∣ m) : is_unit k :=
-by rw [← normalize_eq_one, ← H.gcd_eq_one,
-       gcd_eq_normalize (gcd_dvd_left _ _) (dvd_gcd (dvd_refl k) d)]
-
-@[simp] theorem coprime_zero_left (n : α) : coprime 0 n ↔ is_unit n :=
-by simp [← normalize_eq_one, coprime]
-
-@[simp] theorem coprime_zero_right (n : α) : coprime n 0 ↔ is_unit n :=
-by simp [← normalize_eq_one, coprime]
-
-@[simp] theorem coprime_one_left_iff (n : α) : coprime 1 n ↔ true :=
-by simp [coprime]
-
-@[simp] theorem coprime_one_right_iff (n : α) : coprime n 1 ↔ true :=
-by simp [coprime]
-
-@[simp] theorem coprime_self (n : α) : coprime n n ↔ is_unit n :=
-by simp [← normalize_eq_one, coprime]
-
-end coprime
 
 namespace gcd_monoid
 theorem prime_of_irreducible {x : α} (hi: irreducible x) : prime x :=

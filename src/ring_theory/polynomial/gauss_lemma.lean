@@ -264,8 +264,9 @@ begin
           simp },
         clear hdeg p1_deg q1_deg,
         rw [p1_prim.content_eq_one, q1_prim.content_eq_one, mul_one,
-            content_eq_gcd_leading_coeff_content_sub, leading_coeff_mul,
-            ← coprime, coprime_mul_iff_left, coprime, coprime, ← leading_coeff_mul],
+            content_eq_gcd_leading_coeff_content_sub, leading_coeff_mul],
+
+        rw ← leading_coeff_mul,
         split,
         { have h := hi (p1 - C p1.leading_coeff * X ^ p1.nat_degree) q1 (nat.le_of_lt_succ _),
           { rw [q1_prim.content_eq_one, mul_one] at h,
