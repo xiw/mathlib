@@ -231,6 +231,10 @@ lemma inv_subset_inv [group α] {s t : set α} : s⁻¹ ⊆ t⁻¹ ↔ s ⊆ t :
 @[to_additive] lemma inv_subset [group α] {s t : set α} : s⁻¹ ⊆ t ↔ s ⊆ t⁻¹ :=
 by { rw [← inv_subset_inv, set.inv_inv] }
 
+@[to_additive]
+lemma finite.inv [group α] {s : set α} : finite s → finite s⁻¹ :=
+by { rw ←image_inv, apply finite.image, }
+
 /-! Properties about scalar multiplication -/
 
 /-- Scaling a set: multiplying every element by a scalar. -/
