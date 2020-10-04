@@ -162,6 +162,16 @@ begin
     apply h _ (C_content_dvd _) }
 end
 
+def is_gaussian (p : polynomial R) : Prop := ∀ (q : polynomial R), q.is_primitive → (p * q).is_primitive
+
+lemma is_gaussian.is_primitive {p : polynomial R} (h : p.is_gaussian) : is_primitive p :=
+begin
+  have h1 := h 1 is_primitive_one,
+  rwa [mul_one] at h1,
+end
+
+lemma is_gaussian_C (r : R) :
+
 lemma content_C_mul (r : R) (p : polynomial R) : (C r * p).content = normalize r * p.content :=
 begin
   by_cases h0 : r = 0, { simp [h0] },
