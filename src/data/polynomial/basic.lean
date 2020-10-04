@@ -5,7 +5,7 @@ Authors: Chris Hughes, Johannes Hölzl, Scott Morrison, Jens Wagemaker
 -/
 import tactic.ring_exp
 import tactic.chain
-import data.monoid_algebra
+import algebra.monoid_algebra
 import data.finset.sort
 
 /-!
@@ -103,9 +103,6 @@ coeff_monomial
 @[simp] lemma coeff_X_zero : coeff (X : polynomial R) 0 = 0 := coeff_monomial
 
 lemma coeff_X : coeff (X : polynomial R) n = if 1 = n then 1 else 0 := coeff_monomial
-
-@[simp] lemma mem_support_iff {p : polynomial R} {n : ℕ} : n ∈ p.support ↔ p.coeff n ≠ 0 :=
-by { rw finsupp.mem_support_iff, refl }
 
 theorem ext_iff {p q : polynomial R} : p = q ↔ ∀ n, coeff p n = coeff q n :=
 ⟨λ h n, h ▸ rfl, finsupp.ext⟩
