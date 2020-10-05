@@ -267,28 +267,6 @@ protected def function.surjective.comm_monoid_with_zero [has_zero M₀'] [has_mu
 
 variables [monoid_with_zero M₀]
 
-section
-open_locale classical
-
-/-- Introduce a function `inverse` on a monoid with zero `M₀`, which sends `x` to `x⁻¹` if `x`
-is invertible and to `0` otherwise.  This definition is somewhat ad hoc, but one needs a fully
-(rather than partially) defined inverse function for some purposes, including for calculus. -/
-noncomputable def ring.inverse : M₀ → M₀ :=
-λ x, if h : is_unit x then (((classical.some h)⁻¹ : units M₀) : M₀) else 0
-
-/-- By definition, if `x` is invertible then `inverse x = x⁻¹`. -/
-@[simp] lemma units.inverse_eq (a : units M₀) :
-  ring.inverse (a : M₀) = (a⁻¹ : units M₀) :=
-begin
-  simp only [dif_pos (is_unit_unit _), ring.inverse],
-  exact units.inv_unique (classical.some_spec (is_unit_unit a))
-end
-
-/-- By definition, if `x` is not invertible then `inverse x = 0`. -/
-@[simp] lemma inverse_non_unit (x : M₀) (h : ¬(is_unit x)) : ring.inverse x = 0 := dif_neg h
-
-end
-
 namespace units
 
 /-- An element of the unit group of a nonzero monoid with zero represented as an element

@@ -2344,7 +2344,7 @@ begin
     { refine ⟨{y : R | is_unit y}, x.nhds, _⟩,
       intros y hy,
       cases mem_set_of_eq.mp hy with y' hy',
-      rw [← hy', units.inverse_eq],
+      rw [← hy', inverse_unit],
       exact @has_fderiv_at_ring_inverse 𝕜 _ _ _ _ _ y' },
     { exact (lmul_left_right_is_bounded_bilinear 𝕜 R).times_cont_diff.neg.comp_times_cont_diff_at
         (x : R) (IH.prod IH) } },
