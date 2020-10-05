@@ -556,14 +556,6 @@ end units
 section group_with_zero
 variables [group_with_zero G₀]
 
-lemma inverse_eq_has_inv : (ring.inverse : G₀ → G₀) = has_inv.inv :=
-begin
-  ext x,
-  by_cases hx : x = 0,
-  { simp [hx] },
-  { exact (units.mk0 x hx).inverse_eq }
-end
-
 lemma is_unit.mk0 (x : G₀) (hx : x ≠ 0) : is_unit x := is_unit_unit (units.mk0 x hx)
 
 lemma is_unit_iff_ne_zero {x : G₀} : is_unit x ↔ x ≠ 0 :=
