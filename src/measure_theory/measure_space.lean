@@ -1160,12 +1160,16 @@ end measure
 variables {α : Type*} {β : Type*} [measurable_space α] {μ : measure α}
 
 notation `∀ᵐ` binders ` ∂` μ `, ` r:(scoped P, filter.eventually P (measure.ae μ)) := r
+notation `∃ᵐ` binders ` ∂` μ `, ` r:(scoped P, filter.frequently P (measure.ae μ)) := r
 notation f ` =ᵐ[`:50 μ:50 `] `:0 g:50 := f =ᶠ[measure.ae μ] g
 notation f ` ≤ᵐ[`:50 μ:50 `] `:0 g:50 := f ≤ᶠ[measure.ae μ] g
 
 lemma mem_ae_iff {s : set α} : s ∈ μ.ae ↔ μ sᶜ = 0 := iff.rfl
 
 lemma ae_iff {p : α → Prop} : (∀ᵐ a ∂ μ, p a) ↔ μ { a | ¬ p a } = 0 := iff.rfl
+
+lemma frequently_ae_iff {p : α → Prop} : (∃ᵐ a ∂ μ, p a) ↔ 0 < μ {a | p a} :=
+by simp only [filter.frequently, ae_iff, zero_lt_iff_ne_zero, not_not]
 
 lemma compl_mem_ae_iff {s : set α} : sᶜ ∈ μ.ae ↔ μ s = 0 := by simp only [mem_ae_iff, compl_compl]
 
@@ -1764,6 +1768,7 @@ section measure_space
 variables {α : Type*} {ι : Type*} [measure_space α] {s₁ s₂ : set α}
 
 notation `∀ᵐ` binders `, ` r:(scoped P, filter.eventually P (measure.ae volume)) := r
+notation `∃ᵐ` binders `, ` r:(scoped P, filter.frequently P (measure.ae volume)) := r
 
 /-- The tactic `exact volume`, to be used in optional (`auto_param`) arguments. -/
 meta def volume_tac : tactic unit := `[exact measure_theory.measure_space.volume]

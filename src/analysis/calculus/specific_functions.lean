@@ -21,7 +21,7 @@ open_locale classical topological_space
 open polynomial real filter set
 
 /-- `exp_neg_inv_glue` is the real function given by `x ↦ exp (-1/x)` for `x > 0` and `0`
-for `x ≤ 0`. is a basic building block to construct smooth partitions of unity. Its main property
+for `x ≤ 0`. It is a basic building block to construct smooth partitions of unity. Its main property
 is that it vanishes for `x ≤ 0`, it is positive for `x > 0`, and the junction between the two
 behaviors is flat enough to retain smoothness. The fact that this function is `C^∞` is proved in
 `exp_neg_inv_glue.smooth`. -/
@@ -159,7 +159,7 @@ begin
 end
 
 /-- The function `exp_neg_inv_glue` is smooth. -/
-theorem smooth : times_cont_diff ℝ ⊤ (exp_neg_inv_glue) :=
+theorem smooth : times_cont_diff ℝ ⊤ exp_neg_inv_glue :=
 begin
   rw ← f_aux_zero_eq,
   apply times_cont_diff_of_differentiable_iterated_deriv (λ m hm, _),
@@ -184,3 +184,51 @@ begin
 end
 
 end exp_neg_inv_glue
+
+def smooth_transition (x : ℝ) : ℝ :=
+exp_neg_inv_glue x / (exp_neg_inv_glue x + exp_neg_inv_glue (1 - x))
+
+namespace smooth_transition
+
+variables {x : ℝ}
+
+lemma zero_of_nonpos (h : x ≤ 0) : smooth_transition x = 0 :=
+by rw [smooth_transition, exp_neg_inv_glue.zero_of_nonpos h, zero_div]
+
+lemma one_of_one_le (h : 1 ≤ x) : smooth_transition x = 1 :=
+by rw [smooth_transition, exp_neg_inv_glue.zero_of_nonpos (sub_nonpos.2 h), add_zero,
+  div_self (exp_neg_inv_glue.pos_of_pos $ zero_lt_one.trans_le h).ne.symm]
+
+lemma nonnneg (x : ℝ) : 0 ≤ smooth_transition x :=
+div_nonneg (exp_neg_inv_glue.nonneg _)
+  (add_nonneg (exp_neg_inv_glue.nonneg _) (exp_neg_inv_glue.nonneg _))
+
+lemma pos_of_pos (h : 0 < x) : 0 < smooth_transition x :=
+have 0 < exp_neg_inv_glue x, from exp_neg_inv_glue.pos_of_pos h,
+div_pos this $ add_pos_of_pos_of_nonneg this $ exp_neg_inv_glue.nonneg _
+
+lemma lt_one_of_lt_one (h : x < 1) : smooth_transition x < 1 :=
+have 0 < exp_neg_inv_glue (1 - x), from exp_neg_inv_glue.pos_of_pos (sub_pos.2 h),
+(div_lt_one $ add_pos_of_nonneg_of_pos (exp_neg_inv_glue.nonneg _) this).2 $
+  lt_add_of_pos_right _ this
+
+lemma smooth : times_cont_diff ℝ ⊤ smooth_transition :=
+exp_neg_inv_glue.smooth.div _
+
+-- TODO: do we ever need `strict_mono_incr_on`?
+
+end smooth_transition
+
+/-- A function `f : ℝ → ℝ` with the following properties:
+
+- `f` is infinitely smooth on `ℝ`;
+- `f` is positive on `(-2, 2)` and equals zero otherwise;
+- `f` is equal to `1` on `[-1, 1]`. -/
+def smooth_bump_function (x : ℝ) :=
+smooth_transition (2 + x) * smooth_transition (2 - x)
+
+namespace smooth_bump_function
+
+
+
+end smooth_bump_function

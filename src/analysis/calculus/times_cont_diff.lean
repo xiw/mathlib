@@ -1228,6 +1228,11 @@ lemma times_cont_diff_within_at.times_cont_diff_at {n : with_top ℕ}
   times_cont_diff_at 𝕜 n f x :=
 by rwa [times_cont_diff_at, ← times_cont_diff_within_at_inter hx, univ_inter]
 
+lemma times_cont_diff_at.congr_of_eventually_eq {n : with_top ℕ}
+  (h : times_cont_diff_at 𝕜 n f x) (hg : f₁ =ᶠ[𝓝 x] f) :
+  times_cont_diff_at 𝕜 n f₁ x :=
+h.congr_of_eventually_eq' (by rwa nhds_within_univ) (mem_univ x)
+
 lemma times_cont_diff_at.of_le {m n : with_top ℕ}
   (h : times_cont_diff_at 𝕜 n f x) (hmn : m ≤ n) :
   times_cont_diff_at 𝕜 m f x :=
@@ -2313,7 +2318,7 @@ end prod_map
 /-! ### Inversion in a complete normed algebra -/
 
 section algebra_inverse
-variables (𝕜) (R : Type*) [normed_ring R] [normed_algebra 𝕜 R]
+variables (𝕜) {R : Type*} [normed_ring R] [normed_algebra 𝕜 R]
 open normed_ring continuous_linear_map ring
 
 /-- In a complete normed algebra, the operation of inversion is `C^n`, for all `n`, at each
@@ -2339,12 +2344,18 @@ begin
     { refine ⟨{y : R | is_unit y}, x.nhds, _⟩,
       intros y hy,
       cases mem_set_of_eq.mp hy with y' hy',
-      rw [← hy', inverse_unit],
+      rw [← hy', units.inverse_eq],
       exact @has_fderiv_at_ring_inverse 𝕜 _ _ _ _ _ y' },
     { exact (lmul_left_right_is_bounded_bilinear 𝕜 R).times_cont_diff.neg.comp_times_cont_diff_at
         (x : R) (IH.prod IH) } },
   { exact times_cont_diff_at_top.mpr Itop }
 end
+
+variables (𝕜) (𝕜' : Type*) [normed_field 𝕜'] [normed_algebra 𝕜 𝕜'] [complete_space 𝕜']
+
+lemma times_cont_diff_at_inv {x : 𝕜'} (hx : x ≠ 0) {n} :
+  times_cont_diff_at 𝕜 n has_inv.inv x :=
+by simpa only [inverse_eq_has_inv] using times_cont_diff_at_ring_inverse 𝕜 (units.mk0 x hx)
 
 end algebra_inverse
 
@@ -2378,8 +2389,8 @@ begin
   { convert @times_cont_diff_at_const _ _ _ _ _ _ _ _ _ _ (0 :  E →L[𝕜] E),
     ext,
     simp },
-  { convert times_cont_diff_at_ring_inverse 𝕜 (E →L[𝕜] E) 1,
-    simp [O₂],
+  { convert times_cont_diff_at_ring_inverse 𝕜 1; try { apply_instance },
+    simp [O₂, one_def],
     refl },
 end
 
