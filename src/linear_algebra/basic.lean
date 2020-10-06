@@ -539,52 +539,12 @@ theorem mem_left_iff_eq_zero_of_disjoint {p p' : submodule R M} (h : disjoint p 
   (x:M) ∈ p ↔ x = 0 :=
 ⟨λ hx, coe_eq_zero.1 $ disjoint_def.1 h x hx x.2, λ h, h.symm ▸ p.zero_mem⟩
 
-/-- The pushforward of a submodule `p ⊆ M` by `f : M → M₂` -/
-def map (f : M →ₗ[R] M₂) (p : submodule R M) : submodule R M₂ :=
-{ carrier   := f '' p,
-  smul_mem' := by rintro a _ ⟨b, hb, rfl⟩; exact ⟨_, p.smul_mem _ hb, f.map_smul _ _⟩,
-  .. p.to_add_submonoid.map f.to_add_monoid_hom }
-
-@[simp] lemma map_coe (f : M →ₗ[R] M₂) (p : submodule R M) :
-  (map f p : set M₂) = f '' p := rfl
-
-@[simp] lemma mem_map {f : M →ₗ[R] M₂} {p : submodule R M} {x : M₂} :
-  x ∈ map f p ↔ ∃ y, y ∈ p ∧ f y = x := iff.rfl
-
-theorem mem_map_of_mem {f : M →ₗ[R] M₂} {p : submodule R M} {r} (h : r ∈ p) : f r ∈ map f p :=
-set.mem_image_of_mem _ h
-
-lemma map_id : map linear_map.id p = p :=
-submodule.ext $ λ a, by simp
-
-lemma map_comp (f : M →ₗ[R] M₂) (g : M₂ →ₗ[R] M₃) (p : submodule R M) :
-  map (g.comp f) p = map g (map f p) :=
-submodule.coe_injective $ by simp [map_coe]; rw ← image_comp
-
 lemma map_mono {f : M →ₗ[R] M₂} {p p' : submodule R M} : p ≤ p' → map f p ≤ map f p' :=
 image_subset _
 
 @[simp] lemma map_zero : map (0 : M →ₗ[R] M₂) p = ⊥ :=
 have ∃ (x : M), x ∈ p := ⟨0, p.zero_mem⟩,
 ext $ by simp [this, eq_comm]
-
-/-- The pullback of a submodule `p ⊆ M₂` along `f : M → M₂` -/
-def comap (f : M →ₗ[R] M₂) (p : submodule R M₂) : submodule R M :=
-{ carrier   := f ⁻¹' p,
-  smul_mem' := λ a x h, by simp [p.smul_mem _ h],
-  .. p.to_add_submonoid.comap f.to_add_monoid_hom }
-
-@[simp] lemma comap_coe (f : M →ₗ[R] M₂) (p : submodule R M₂) :
-  (comap f p : set M) = f ⁻¹' p := rfl
-
-@[simp] lemma mem_comap {f : M →ₗ[R] M₂} {p : submodule R M₂} :
-  x ∈ comap f p ↔ f x ∈ p := iff.rfl
-
-lemma comap_id : comap linear_map.id p = p :=
-submodule.coe_injective rfl
-
-lemma comap_comp (f : M →ₗ[R] M₂) (g : M₂ →ₗ[R] M₃) (p : submodule R M₃) :
-  comap (g.comp f) p = comap f (comap g p) := rfl
 
 lemma comap_mono {f : M →ₗ[R] M₂} {q q' : submodule R M₂} : q ≤ q' → comap f q ≤ comap f q' :=
 preimage_mono

@@ -62,3 +62,57 @@ lemma restrict_eq_dom_restrict_cod_restrict
 end add_comm_monoid
 
 end linear_map
+
+namespace submodule
+
+section add_comm_monoid
+
+variables [semiring R] [add_comm_monoid M] [add_comm_monoid M₂] [add_comm_monoid M₃]
+variables [semimodule R M] [semimodule R M₂] [semimodule R M₃]
+variables (p p' : submodule R M) (q q' : submodule R M₂)
+variables {r : R} {x y : M}
+open set
+
+/-- The pushforward of a submodule `p ⊆ M` by `f : M → M₂` -/
+def map (f : M →ₗ[R] M₂) (p : submodule R M) : submodule R M₂ :=
+{ carrier   := f '' p,
+  smul_mem' := by rintro a _ ⟨b, hb, rfl⟩; exact ⟨_, p.smul_mem _ hb, f.map_smul _ _⟩,
+  .. p.to_add_submonoid.map f.to_add_monoid_hom }
+
+@[simp] lemma map_coe (f : M →ₗ[R] M₂) (p : submodule R M) :
+  (map f p : set M₂) = f '' p := rfl
+
+@[simp] lemma mem_map {f : M →ₗ[R] M₂} {p : submodule R M} {x : M₂} :
+  x ∈ map f p ↔ ∃ y, y ∈ p ∧ f y = x := iff.rfl
+
+theorem mem_map_of_mem {f : M →ₗ[R] M₂} {p : submodule R M} {r} (h : r ∈ p) : f r ∈ map f p :=
+set.mem_image_of_mem _ h
+
+lemma map_id : map linear_map.id p = p :=
+submodule.ext $ λ a, by simp
+
+lemma map_comp (f : M →ₗ[R] M₂) (g : M₂ →ₗ[R] M₃) (p : submodule R M) :
+  map (g.comp f) p = map g (map f p) :=
+submodule.coe_injective $ by simp [map_coe]; rw ← image_comp
+
+/-- The pullback of a submodule `p ⊆ M₂` along `f : M → M₂` -/
+def comap (f : M →ₗ[R] M₂) (p : submodule R M₂) : submodule R M :=
+{ carrier   := f ⁻¹' p,
+  smul_mem' := λ a x h, by simp [p.smul_mem _ h],
+  .. p.to_add_submonoid.comap f.to_add_monoid_hom }
+
+@[simp] lemma comap_coe (f : M →ₗ[R] M₂) (p : submodule R M₂) :
+  (comap f p : set M) = f ⁻¹' p := rfl
+
+@[simp] lemma mem_comap {f : M →ₗ[R] M₂} {p : submodule R M₂} :
+  x ∈ comap f p ↔ f x ∈ p := iff.rfl
+
+lemma comap_id : comap linear_map.id p = p :=
+submodule.coe_injective rfl
+
+lemma comap_comp (f : M →ₗ[R] M₂) (g : M₂ →ₗ[R] M₃) (p : submodule R M₃) :
+  comap (g.comp f) p = comap f (comap g p) := rfl
+
+end add_comm_monoid
+
+end submodule
