@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Kenny Lau, Mario Carneiro
 -/
 
+import algebra.module.linear_map
 import group_theory.congruence
-import linear_algebra.basic
 
 /-!
 # Tensor product of semimodules over commutative semirings.

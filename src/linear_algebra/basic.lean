@@ -958,17 +958,6 @@ def of_top (h : p = ⊤) : p ≃ₗ[R] M :=
 
 theorem of_top_symm_apply {h} (x : M) : (of_top p h).symm x = ⟨x, h.symm ▸ trivial⟩ := rfl
 
-/-- If a linear map has an inverse, it is a linear equivalence. -/
-def of_linear (h₁ : f.comp g = linear_map.id) (h₂ : g.comp f = linear_map.id) : M ≃ₗ[R] M₂ :=
-{ inv_fun   := g,
-  left_inv  := linear_map.ext_iff.1 h₂,
-  right_inv := linear_map.ext_iff.1 h₁,
-  ..f }
-
-@[simp] theorem of_linear_apply {h₁ h₂} (x : M) : of_linear f g h₁ h₂ x = f x := rfl
-
-@[simp] theorem of_linear_symm_apply {h₁ h₂} (x : M₂) : (of_linear f g h₁ h₂).symm x = g x := rfl
-
 @[simp] protected theorem range : (e : M →ₗ[R] M₂).range = ⊤ :=
 linear_map.range_eq_top.2 e.to_equiv.surjective
 

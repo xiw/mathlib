@@ -572,6 +572,19 @@ protected lemma surjective : function.surjective e := e.to_equiv.surjective
 protected lemma image_eq_preimage (s : set M) : e '' s = e.symm ⁻¹' s :=
 e.to_equiv.image_eq_preimage s
 
+variables (f : M →ₗ[R] M₂) (g : M₂ →ₗ[R] M)
+
+/-- If a linear map has an inverse, it is a linear equivalence. -/
+def of_linear (h₁ : f.comp g = linear_map.id) (h₂ : g.comp f = linear_map.id) : M ≃ₗ[R] M₂ :=
+{ inv_fun   := g,
+  left_inv  := linear_map.ext_iff.1 h₂,
+  right_inv := linear_map.ext_iff.1 h₁,
+  ..f }
+
+@[simp] theorem of_linear_apply {h₁ h₂} (x : M) : of_linear f g h₁ h₂ x = f x := rfl
+
+@[simp] theorem of_linear_symm_apply {h₁ h₂} (x : M₂) : (of_linear f g h₁ h₂).symm x = g x := rfl
+
 end
 
 end add_comm_monoid
