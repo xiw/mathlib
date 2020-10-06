@@ -193,30 +193,31 @@ namespace smooth_transition
 
 variables {x : ℝ}
 
-lemma zero_of_nonpos (h : x ≤ 0) : smooth_transition x = 0 :=
-by rw [smooth_transition, exp_neg_inv_glue.zero_of_nonpos h, zero_div]
+open exp_neg_inv_glue
+
+lemma pos_denom (x) : 0 < exp_neg_inv_glue x + exp_neg_inv_glue (1 - x) :=
+((@zero_lt_one ℝ _).lt_or_lt x).elim
+  (λ hx, add_pos_of_pos_of_nonneg (pos_of_pos hx) (nonneg _))
+  (λ hx, add_pos_of_nonneg_of_pos (nonneg _) (pos_of_pos $ sub_pos.2 hx))
 
 lemma one_of_one_le (h : 1 ≤ x) : smooth_transition x = 1 :=
-by rw [smooth_transition, exp_neg_inv_glue.zero_of_nonpos (sub_nonpos.2 h), add_zero,
-  div_self (exp_neg_inv_glue.pos_of_pos $ zero_lt_one.trans_le h).ne.symm]
+(div_eq_one_iff_eq $ (pos_denom x).ne').2 $ by rw [zero_of_nonpos (sub_nonpos.2 h), add_zero]
+
+lemma zero_of_nonpos (h : x ≤ 0) : smooth_transition x = 0 :=
+by rw [smooth_transition, zero_of_nonpos h, zero_div]
 
 lemma nonnneg (x : ℝ) : 0 ≤ smooth_transition x :=
-div_nonneg (exp_neg_inv_glue.nonneg _)
-  (add_nonneg (exp_neg_inv_glue.nonneg _) (exp_neg_inv_glue.nonneg _))
-
-lemma pos_of_pos (h : 0 < x) : 0 < smooth_transition x :=
-have 0 < exp_neg_inv_glue x, from exp_neg_inv_glue.pos_of_pos h,
-div_pos this $ add_pos_of_pos_of_nonneg this $ exp_neg_inv_glue.nonneg _
+div_nonneg (exp_neg_inv_glue.nonneg _) (pos_denom x).le
 
 lemma lt_one_of_lt_one (h : x < 1) : smooth_transition x < 1 :=
-have 0 < exp_neg_inv_glue (1 - x), from exp_neg_inv_glue.pos_of_pos (sub_pos.2 h),
-(div_lt_one $ add_pos_of_nonneg_of_pos (exp_neg_inv_glue.nonneg _) this).2 $
-  lt_add_of_pos_right _ this
+(div_lt_one $ pos_denom x).2 $ lt_add_of_pos_right _ $ pos_of_pos $ sub_pos.2 h
+
+lemma pos_of_pos (h : 0 < x) : 0 < smooth_transition x :=
+div_pos (exp_neg_inv_glue.pos_of_pos h) (pos_denom x)
 
 lemma smooth : times_cont_diff ℝ ⊤ smooth_transition :=
-exp_neg_inv_glue.smooth.div _
-
--- TODO: do we ever need `strict_mono_incr_on`?
+smooth.div (smooth.add $ smooth.comp $ times_cont_diff_const.sub times_cont_diff_id) $
+  λ x, (pos_denom x).ne'
 
 end smooth_transition
 
@@ -225,11 +226,16 @@ end smooth_transition
 - `f` is infinitely smooth on `ℝ`;
 - `f` is positive on `(-2, 2)` and equals zero otherwise;
 - `f` is equal to `1` on `[-1, 1]`. -/
-def smooth_bump_function (x : ℝ) :=
-smooth_transition (2 + x) * smooth_transition (2 - x)
+def real.smooth_bump_function (x : ℝ) :=
+smooth_transition (4 - x ^ 2)
 
+namespace real
 namespace smooth_bump_function
 
+open smooth_transition
 
+lemma smooth : times_cont_diff ℝ ⊤ smooth_bump_function :=
+smooth.comp $ times_cont_diff_const.sub $ times_cont_diff_id.pow 2
 
 end smooth_bump_function
+end real

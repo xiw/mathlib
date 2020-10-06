@@ -2012,9 +2012,13 @@ lemma times_cont_diff_within_at.comp' {n : with_top ℕ} {s : set E} {t : set F}
   times_cont_diff_within_at 𝕜 n (g ∘ f) (s ∩ f⁻¹' t) x :=
 hg.comp x (hf.mono (inter_subset_left _ _)) (inter_subset_right _ _)
 
+lemma times_cont_diff_at.comp_times_cont_diff_within_at {n} (x : E)
+  (hg : times_cont_diff_at 𝕜 n g (f x)) (hf : times_cont_diff_within_at 𝕜 n f s x) :
+  times_cont_diff_within_at 𝕜 n (g ∘ f) s x :=
+hg.comp x hf (maps_to_univ _ _)
+
 /-- The composition of `C^n` functions at points is `C^n`. -/
-lemma times_cont_diff_at.comp
-  {n : with_top ℕ} {g : F → G} {f : E → F} (x : E)
+lemma times_cont_diff_at.comp {n : with_top ℕ} (x : E)
   (hg : times_cont_diff_at 𝕜 n g (f x))
   (hf : times_cont_diff_at 𝕜 n f x) :
   times_cont_diff_at 𝕜 n (g ∘ f) x :=
@@ -2213,6 +2217,12 @@ lemma times_cont_diff.mul {n : with_top ℕ} {f g : E → 𝕜}
   times_cont_diff 𝕜 n (λ x, f x * g x) :=
 times_cont_diff_mul.comp (hf.prod hg)
 
+lemma times_cont_diff.pow {n : with_top ℕ} {f g : E → 𝕜}
+  (hf : times_cont_diff 𝕜 n f) :
+  ∀ m : ℕ, times_cont_diff 𝕜 n (λ x, (f x) ^ m)
+| 0 := by simpa using times_cont_diff_const
+| (m + 1) := hf.mul (times_cont_diff.pow m)
+
 /-- The product of two `C^n` functions on a domain is `C^n`. -/
 lemma times_cont_diff_on.mul {n : with_top ℕ} {s : set E} {f g : E → 𝕜}
   (hf : times_cont_diff_on 𝕜 n f s) (hg : times_cont_diff_on 𝕜 n g s) :
@@ -2351,11 +2361,48 @@ begin
   { exact times_cont_diff_at_top.mpr Itop }
 end
 
-variables (𝕜) (𝕜' : Type*) [normed_field 𝕜'] [normed_algebra 𝕜 𝕜'] [complete_space 𝕜']
+variables (𝕜) {𝕜' : Type*} [normed_field 𝕜'] [normed_algebra 𝕜 𝕜'] [complete_space 𝕜']
 
 lemma times_cont_diff_at_inv {x : 𝕜'} (hx : x ≠ 0) {n} :
   times_cont_diff_at 𝕜 n has_inv.inv x :=
 by simpa only [inverse_eq_has_inv] using times_cont_diff_at_ring_inverse 𝕜 (units.mk0 x hx)
+
+variable {𝕜}
+
+-- TODO: the next few lemmas don't need `𝕜` or `𝕜'` to be complete
+-- A good way to show this is to generalize proofs about `inverse` to a function `f` such that
+-- `∀ᶠ x in 𝓝 a, x * f x = 1`.
+
+lemma times_cont_diff_within_at.inv {f : E → 𝕜'} {n} (hf : times_cont_diff_within_at 𝕜 n f s x)
+  (hx : f x ≠ 0) :
+  times_cont_diff_within_at 𝕜 n (λ x, (f x)⁻¹) s x :=
+(times_cont_diff_at_inv 𝕜 hx).comp_times_cont_diff_within_at x hf
+
+lemma times_cont_diff_at.inv {f : E → 𝕜'} {n} (hf : times_cont_diff_at 𝕜 n f x) (hx : f x ≠ 0) :
+  times_cont_diff_at 𝕜 n (λ x, (f x)⁻¹) x :=
+hf.inv hx
+
+-- TODO: generalize to `f g : E → 𝕜'`
+lemma times_cont_diff_within_at.div [complete_space 𝕜] {f g : E → 𝕜} {n}
+  (hf : times_cont_diff_within_at 𝕜 n f s x) (hg : times_cont_diff_within_at 𝕜 n g s x)
+  (hx : g x ≠ 0) :
+  times_cont_diff_within_at 𝕜 n (λ x, f x / g x) s x :=
+hf.mul (hg.inv hx)
+
+lemma times_cont_diff_at.div [complete_space 𝕜] {f g : E → 𝕜} {n}
+  (hf : times_cont_diff_at 𝕜 n f x) (hg : times_cont_diff_at 𝕜 n g x)
+  (hx : g x ≠ 0) :
+  times_cont_diff_at 𝕜 n (λ x, f x / g x) x :=
+hf.div hg hx
+
+lemma times_cont_diff.div [complete_space 𝕜] {f g : E → 𝕜} {n}
+  (hf : times_cont_diff 𝕜 n f) (hg : times_cont_diff 𝕜 n g)
+  (h0 : ∀ x, g x ≠ 0) :
+  times_cont_diff 𝕜 n (λ x, f x / g x) :=
+begin
+  simp only [times_cont_diff_iff_times_cont_diff_at] at *,
+  exact λ x, (hf x).div (hg x) (h0 x)
+end
 
 end algebra_inverse
 
@@ -2390,8 +2437,7 @@ begin
     ext,
     simp },
   { convert times_cont_diff_at_ring_inverse 𝕜 1; try { apply_instance },
-    simp [O₂, one_def],
-    refl },
+    simp [O₂, one_def] },
 end
 
 end map_inverse
