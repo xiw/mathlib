@@ -6,7 +6,7 @@ Authors: Johannes Hölzl, Mario Carneiro, Kevin Buzzard, Yury Kudryashov
 import algebra.big_operators.pi
 import algebra.module.pi
 import algebra.module.prod
-import algebra.module.submodule
+import algebra.module.submodule.basic
 import algebra.group.prod
 import data.finsupp.basic
 import algebra.pointwise
