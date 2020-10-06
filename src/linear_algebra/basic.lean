@@ -93,64 +93,6 @@ variables [semimodule R M] [semimodule R M₂] [semimodule R M₃] [semimodule R
 variables (f g : M →ₗ[R] M₂)
 include R
 
-/-- The constant 0 map is linear. -/
-instance : has_zero (M →ₗ[R] M₂) := ⟨⟨λ _, 0, by simp, by simp⟩⟩
-
-instance : inhabited (M →ₗ[R] M₂) := ⟨0⟩
-
-@[simp] lemma zero_apply (x : M) : (0 : M →ₗ[R] M₂) x = 0 := rfl
-
-/-- The sum of two linear maps is linear. -/
-instance : has_add (M →ₗ[R] M₂) :=
-⟨λ f g, ⟨λ b, f b + g b, by simp [add_comm, add_left_comm], by simp [smul_add]⟩⟩
-
-@[simp] lemma add_apply (x : M) : (f + g) x = f x + g x := rfl
-
-/-- The type of linear maps is an additive monoid. -/
-instance : add_comm_monoid (M →ₗ[R] M₂) :=
-by refine {zero := 0, add := (+), ..};
-   intros; ext; simp [add_comm, add_left_comm]
-
-instance linear_map_apply_is_add_monoid_hom (a : M) :
-  is_add_monoid_hom (λ f : M →ₗ[R] M₂, f a) :=
-{ map_add := λ f g, linear_map.add_apply f g a,
-  map_zero := rfl }
-
-lemma add_comp (g : M₂ →ₗ[R] M₃) (h : M₂ →ₗ[R] M₃) :
-  (h + g).comp f = h.comp f + g.comp f := rfl
-
-lemma comp_add (g : M →ₗ[R] M₂) (h : M₂ →ₗ[R] M₃) :
-  h.comp (f + g) = h.comp f + h.comp g := by { ext, simp }
-
-lemma sum_apply (t : finset ι) (f : ι → M →ₗ[R] M₂) (b : M) :
-  (∑ d in t, f d) b = ∑ d in t, f d b :=
-(t.sum_hom (λ g : M →ₗ[R] M₂, g b)).symm
-
-/-- `λb, f b • x` is a linear map. -/
-def smul_right (f : M₂ →ₗ[R] R) (x : M) : M₂ →ₗ[R] M :=
-⟨λb, f b • x, by simp [add_smul], by simp [smul_smul]⟩.
-
-@[simp] theorem smul_right_apply (f : M₂ →ₗ[R] R) (x : M) (c : M₂) :
-  (smul_right f x : M₂ → M) c = f c • x := rfl
-
-instance : has_one (M →ₗ[R] M) := ⟨linear_map.id⟩
-instance : has_mul (M →ₗ[R] M) := ⟨linear_map.comp⟩
-
-@[simp] lemma one_app (x : M) : (1 : M →ₗ[R] M) x = x := rfl
-@[simp] lemma mul_app (A B : M →ₗ[R] M) (x : M) : (A * B) x = A (B x) := rfl
-
-@[simp] theorem comp_zero : f.comp (0 : M₃ →ₗ[R] M) = 0 :=
-ext $ assume c, by rw [comp_apply, zero_apply, zero_apply, f.map_zero]
-
-@[simp] theorem zero_comp : (0 : M₂ →ₗ[R] M₃).comp f = 0 :=
-rfl
-
-@[norm_cast] lemma coe_fn_sum {ι : Type*} (t : finset ι) (f : ι → M →ₗ[R] M₂) :
-  ⇑(∑ i in t, f i) = ∑ i in t, (f i : M → M₂) :=
-add_monoid_hom.map_sum ⟨@to_fun R M M₂ _ _ _ _ _, rfl, λ x y, rfl⟩ _ _
-
-instance : monoid (M →ₗ[R] M) :=
-by refine {mul := (*), one := 1, ..}; { intros, apply linear_map.ext, simp {proj := ff} }
 
 section
 open_locale classical
