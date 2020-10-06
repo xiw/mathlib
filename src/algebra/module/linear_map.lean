@@ -136,8 +136,7 @@ end
 
 section
 
-variables {semimodule_M : semimodule R M} {semimodule_M₂ : semimodule R M₂}
-{semimodule_M₃ : semimodule R M₃}
+variables [semimodule R M] [semimodule R M₂] [semimodule R M₃]
 variables (f : M₂ →ₗ[R] M₃) (g : M →ₗ[R] M₂)
 
 /-- Composition of two linear maps is a linear map -/
@@ -147,6 +146,17 @@ def comp : M →ₗ[R] M₃ := ⟨f ∘ g, by simp, by simp⟩
 
 @[norm_cast]
 lemma comp_coe : (f : M₂ → M₃) ∘ (g : M → M₂) = f.comp g := rfl
+
+@[simp] theorem comp_id : f.comp id = f :=
+linear_map.ext $ λ x, rfl
+
+@[simp] theorem id_comp : id.comp f = f :=
+linear_map.ext $ λ x, rfl
+
+theorem comp_assoc {M₄ : Type*} [add_comm_monoid M₄] [semimodule R M₄]
+  (f : M →ₗ[R] M₂) (g : M₂ →ₗ[R] M₃) (h : M₃ →ₗ[R] M₄) :
+  (h.comp g).comp f = h.comp (g.comp f) :=
+rfl
 
 end
 
