@@ -1599,6 +1599,14 @@ The identity is `C^∞`.
 lemma times_cont_diff_id {n : with_top ℕ} : times_cont_diff 𝕜 n (id : E → E) :=
 is_bounded_linear_map.id.times_cont_diff
 
+lemma times_cont_diff_within_at_id {n : with_top ℕ} {s x} :
+  times_cont_diff_within_at 𝕜 n (id : E → E) s x :=
+times_cont_diff_id.times_cont_diff_within_at
+
+lemma times_cont_diff_at_id {n : with_top ℕ} {x} :
+  times_cont_diff_at 𝕜 n (id : E → E) x :=
+times_cont_diff_id.times_cont_diff_at
+
 /--
 Bilinear functions are `C^∞`.
 -/
@@ -2217,7 +2225,7 @@ lemma times_cont_diff.mul {n : with_top ℕ} {f g : E → 𝕜}
   times_cont_diff 𝕜 n (λ x, f x * g x) :=
 times_cont_diff_mul.comp (hf.prod hg)
 
-lemma times_cont_diff.pow {n : with_top ℕ} {f g : E → 𝕜}
+lemma times_cont_diff.pow {n : with_top ℕ} {f : E → 𝕜}
   (hf : times_cont_diff 𝕜 n f) :
   ∀ m : ℕ, times_cont_diff 𝕜 n (λ x, (f x) ^ m)
 | 0 := by simpa using times_cont_diff_const
