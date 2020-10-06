@@ -2,10 +2,20 @@
 Copyright (c) 2019 Jeremy Avigad. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jeremy Avigad
-
-The `even` and `odd` predicates on the natural numbers.
 -/
 import data.nat.modeq
+import algebra.ring.parity
+
+/-!
+# Properties of `even` and `odd` predicates on natural numbers
+
+The predicates `even` and `odd` are defined in `algebra/ring/parity` for any semiring. In this file
+we prove various facts which are specific to natural numbers.
+
+## Tags
+
+parity, even, add, natural number
+-/
 
 namespace nat
 
@@ -28,21 +38,13 @@ by rw [even_iff, mod_two_ne_zero]
 @[simp] lemma odd_iff_not_even {n : ℕ} : odd n ↔ ¬ even n :=
 by rw [not_even_iff, odd_iff]
 
-instance : decidable_pred (even : ℕ → Prop) :=
-λ n, decidable_of_decidable_of_iff (by apply_instance) even_iff.symm
-
 instance decidable_pred_odd : decidable_pred (odd : ℕ → Prop) :=
 λ n, decidable_of_decidable_of_iff (by apply_instance) odd_iff_not_even.symm
 
 mk_simp_attribute parity_simps "Simp attribute for lemmas about `even`"
 
-@[simp] theorem even_zero : even 0 := ⟨0, dec_trivial⟩
-
 @[simp] theorem not_even_one : ¬ even 1 :=
 by rw even_iff; apply one_ne_zero
-
-@[simp] theorem even_bit0 (n : ℕ) : even (bit0 n) :=
-⟨n, by rw [bit0, two_mul]⟩
 
 @[parity_simps] theorem even_add {m n : ℕ} : even (m + n) ↔ (even m ↔ even n) :=
 begin
@@ -53,9 +55,6 @@ begin
   { exact @modeq.modeq_add _ _ 1 _ 0 h₁ h₂ },
   exact @modeq.modeq_add _ _ 1 _ 1 h₁ h₂
 end
-
-theorem even.add {m n : ℕ} (hm : even m) (hn : even n) : even (m + n) :=
-even_add.2 $ by simp only [*]
 
 @[simp] theorem not_even_bit1 (n : ℕ) : ¬ even (bit1 n) :=
 by simp [bit1] with parity_simps
@@ -79,6 +78,8 @@ theorem even.sub {m n : ℕ} (hm : even m) (hn : even n) : even (m - n) :=
 (le_total n m).elim
   (λ h, by simp only [even_sub h, *])
   (λ h, by simp only [sub_eq_zero_of_le h, even_zero])
+
+alias even.sub ← even.nat_sub
 
 @[parity_simps] theorem even_succ {n : ℕ} : even (succ n) ↔ ¬ even n :=
 by rw [succ_eq_add_one, even_add]; simp [not_even_one]
