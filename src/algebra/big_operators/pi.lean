@@ -7,6 +7,7 @@ import algebra.ring.pi
 import algebra.big_operators
 import data.fintype.basic
 import algebra.group.prod
+import algebra.module.pi
 /-!
 # Big operators for Pi Types
 
@@ -107,3 +108,13 @@ lemma snd_prod  : (∏ c in s, f c).2 = ∏ c in s, (f c).2 :=
 (monoid_hom.snd α β).map_prod f s
 
 end prod
+
+section
+open_locale classical
+
+/-- decomposing `x : ι → R` as a sum along the canonical basis -/
+lemma pi_eq_sum_univ {ι : Type*} [fintype ι] {R : Type*} [semiring R] (x : ι → R) :
+  x = ∑ i, x i • (λj, if i = j then 1 else 0) :=
+by { ext, simp }
+
+end

@@ -4,7 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Kenny Lau, Chris Hughes, Mario Carneiro
 -/
 import algebra.associated
-import linear_algebra.basic
+import algebra.big_operators.pi
+import algebra.module.submodule.quotient
 import order.zorn
 /-!
 
