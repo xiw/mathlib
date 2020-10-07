@@ -80,9 +80,11 @@ dvd_mul_of_dvd_left ha b
 lemma even.mul_left (ha : even a) (b : R) : even (b * a) :=
 even.elim ha $ λ a, ⟨b * a, by rw [two_mul, two_mul, mul_add]⟩
 
+@[nolint unused_argument] -- `hb` is unused
 lemma even.mul_odd (ha : even a) (hb : odd b) : even (a * b) :=
 ha.mul_right b
 
+@[nolint unused_argument] -- `ha` is unused
 lemma odd.mul_even (ha : odd a) (hb : even b) : even (a * b) :=
 hb.mul_left a
 
