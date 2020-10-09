@@ -261,7 +261,7 @@ def add_monoid_hom.to_int_linear_map [add_comm_group M] [add_comm_group M₂] (f
 def add_monoid_hom.to_rat_linear_map [add_comm_group M] [vector_space ℚ M]
   [add_comm_group M₂] [vector_space ℚ M₂] (f : M →+ M₂) :
   M →ₗ[ℚ] M₂ :=
-⟨f, f.map_add, f.map_rat_module_smul⟩
+{map_smul' := f.map_rat_module_smul, ..f}
 
 /-! ### Linear equivalences -/
 section
