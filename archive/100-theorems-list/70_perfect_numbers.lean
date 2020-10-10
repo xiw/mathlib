@@ -7,10 +7,13 @@ Author: Aaron Anderson.
 import number_theory.arithmetic_function
 import number_theory.lucas_lehmer
 <<<<<<< HEAD
+<<<<<<< HEAD
 import ring_theory.multiplicity
 =======
 import algebra.geom_sum
 >>>>>>> origin/perfect_euclid
+=======
+>>>>>>> parent of 1d3137d... want to merge
 
 /-!
 # Perfect Numbers
@@ -42,14 +45,14 @@ by simp [← even_iff_two_dvd, ← nat.even_succ, nat.succ_eq_add_one] with pari
 
 namespace nat
 open arithmetic_function finset
-open_locale arithmetic_function big_operators
+open_locale arithmetic_function
 
 lemma sigma_two_pow_eq_mersenne_succ (k : ℕ) : σ 1 (2 ^ k) = mersenne (k + 1) :=
 by simpa [mersenne, prime_two, ← geom_sum_mul_add 1 (k+1)]
 
 
 /-- Euclid's theorem that Mersenne primes induce perfect numbers -/
-theorem perfect_two_pow_mul_mersenne_of_prime {k : ℕ} (pr : (mersenne (k + 1)).prime) :
+theorem perfect_two_pow_mul_mersenne_of_prime (k : ℕ) (pr : (mersenne (k + 1)).prime) :
   perfect ((2 ^ k) * mersenne (k + 1)) :=
 begin
   rw [perfect_iff_sum_divisors_eq_two_mul, ← mul_assoc, ← pow_succ, ← sigma_one_apply, mul_comm,
@@ -62,7 +65,11 @@ begin
 end
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 theorem even_two_pow_mul_mersenne_of_prime {k : ℕ} (pr : (mersenne (k + 1)).prime) :
+=======
+theorem even_two_pow_mul_mersenne_of_prime (k : ℕ) (pr : (mersenne (k + 1)).prime) :
+>>>>>>> parent of 1d3137d... want to merge
   even ((2 ^ k) * mersenne (k + 1)) :=
 =======
 lemma ne_zero_of_mersenne_of_prime (k : ℕ) (pr : (mersenne (k + 1)).prime) :
@@ -73,6 +80,7 @@ begin
   simpa [mersenne, not_prime_one] using pr,
 end
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 lemma eq_two_pow_mul_odd (n : ℕ) :
   ∃ {k m : ℕ}, n = 2 ^ k * m ∧ ¬ even m :=
@@ -182,4 +190,6 @@ theorem even_two_pow_mul_mersenne_of_prime (k : ℕ) (pr : (mersenne (k + 1)).pr
 by simp [ne_zero_of_mersenne_of_prime k pr] with parity_simps
 >>>>>>> origin/perfect_euclid
 
+=======
+>>>>>>> parent of 1d3137d... want to merge
 end nat

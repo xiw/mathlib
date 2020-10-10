@@ -133,15 +133,6 @@ lemma divisors_zero : divisors 0 = ∅ := by { ext, simp }
 lemma proper_divisors_zero : proper_divisors 0 = ∅ := by { ext, simp }
 
 @[simp]
-lemma proper_divisors_one : proper_divisors 1 = ∅ :=
-begin
-  ext,
-  simp only [finset.not_mem_empty, nat.dvd_one, not_and, not_lt, mem_proper_divisors, iff_false],
-  rintro rfl,
-  refl,
-end
-
-@[simp]
 lemma divisors_antidiagonal_zero : divisors_antidiagonal 0 = ∅ := by { ext, simp }
 
 @[simp]

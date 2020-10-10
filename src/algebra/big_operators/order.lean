@@ -193,17 +193,6 @@ begin
     simp [hx, h'x] }
 end
 
-lemma sum_eq_sum_iff_eq_of_subset_of_pos (hsub : s₁ ⊆ s₂) (hf : ∀x∈s₂, 0 < f x) :
-  ∑ x in s₁, f x = ∑ x in s₂, f x ↔ s₁ = s₂ :=
-⟨λ h, subset.antisymm hsub begin
-  classical,
-  rw subset_iff,
-  contrapose! h,
-  rcases h with ⟨i, h2, h1⟩,
-  apply ne_of_lt (sum_lt_sum_of_subset hsub (mem_sdiff.2 ⟨h2, h1⟩) (hf i h2)
-    (λ j hj, le_of_lt (hf _ (mem_sdiff.1 hj).1))),
-end, λ h, by rw h⟩
-
 end ordered_cancel_comm_monoid
 
 section decidable_linear_ordered_cancel_comm_monoid
