@@ -104,13 +104,13 @@ theorem coe_injective : injective (λ f : M →ₗ[R] M₂, show M → M₂, fro
 by rintro ⟨f, _⟩ ⟨g, _⟩ ⟨h⟩; congr
 
 @[ext] theorem ext (H : ∀ x, f x = g x) : f = g :=
-coe_inj $ funext H
+coe_injective $ funext H
 
 lemma coe_fn_congr : Π {x x' : M}, x = x' → f x = f x'
 | _ _ rfl := rfl
 
 theorem ext_iff : f = g ↔ ∀ x, f x = g x :=
-⟨by { rintro rfl x, refl } , ext⟩
+⟨by { rintro rfl x, refl }, ext⟩
 
 /-- If two linear maps are equal, they are equal at each point. -/
 lemma lcongr_fun (h : f = g) (m : M) : f m = g m :=
@@ -136,7 +136,7 @@ def to_add_monoid_hom : M →+ M₂ :=
   map_add' := f.map_add }
 
 @[simp] lemma to_add_monoid_hom_coe :
-  ((f.to_add_monoid_hom) : M → M₂) = f := rfl
+  (f.to_add_monoid_hom : M → M₂) = f := rfl
 
 @[simp] lemma map_sum {ι} {t : finset ι} {g : ι → M} :
   f (∑ i in t, g i) = (∑ i in t, f (g i)) :=
@@ -187,7 +187,7 @@ f.to_add_monoid_hom.map_neg x
 f.to_add_monoid_hom.map_sub x y
 
 instance : is_add_group_hom f :=
-{ map_add := map_add f}
+{ map_add := map_add f }
 
 end add_comm_group
 
@@ -215,7 +215,6 @@ begin
   simp only [smul_smul, mul_comm]
 end
 
---TODO: move
 lemma is_linear_map_smul' {R M : Type*} [semiring R] [add_comm_monoid M] [semimodule R M] (a : M) :
   is_linear_map R (λ (c : R), c • a) :=
 is_linear_map.mk (λ x y, add_smul x y a) (λ x y, mul_smul x y a)
@@ -261,7 +260,7 @@ def add_monoid_hom.to_int_linear_map [add_comm_group M] [add_comm_group M₂] (f
 def add_monoid_hom.to_rat_linear_map [add_comm_group M] [vector_space ℚ M]
   [add_comm_group M₂] [vector_space ℚ M₂] (f : M →+ M₂) :
   M →ₗ[ℚ] M₂ :=
-{map_smul' := f.map_rat_module_smul, ..f}
+{ map_smul' := f.map_rat_module_smul, ..f }
 
 /-! ### Linear equivalences -/
 section
@@ -315,7 +314,7 @@ variables (e e' : M ≃ₗ[R] M₂)
 
 @[simp, norm_cast] theorem coe_coe : ((e : M →ₗ[R] M₂) : M → M₂) = (e : M → M₂) := rfl
 
-@[simp] lemma coe_to_equiv : ((e.to_equiv) : M → M₂) = (e : M → M₂) := rfl
+@[simp] lemma coe_to_equiv : (e.to_equiv : M → M₂) = (e : M → M₂) := rfl
 
 @[simp] lemma to_fun_apply {m : M} : e.to_fun m = e m := rfl
 
