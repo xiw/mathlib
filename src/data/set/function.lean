@@ -336,6 +336,13 @@ iff.intro
 (λ h, let ⟨map, inj, surj⟩ := h in
 ⟨iff.mpr injective_iff_inj_on_univ inj, iff.mpr surjective_iff_surj_on_univ surj⟩)
 
+lemma bij_on.compl (hst : bij_on f s t) (hf : bijective f) : bij_on f sᶜ tᶜ :=
+⟨λ x hs ht, let ⟨x', hx', heq⟩ := hst.surj_on ht
+  in absurd (hf.1 heq) $ λ heq, hs $ heq ▸ hx',
+  λ x _ y _ hxy, hf.1 hxy,
+  λ y hy, let ⟨x, hx⟩ := hf.2 y in hx ▸ mem_image_of_mem _ $
+  show x ∈ sᶜ, from λ hx', hy $ hx ▸ hst.maps_to hx'⟩
+
 /-! ### left inverse -/
 
 /-- `g` is a left inverse to `f` on `a` means that `g (f x) = x` for all `x ∈ a`. -/
