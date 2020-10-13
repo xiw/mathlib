@@ -1318,11 +1318,11 @@ lemma sum_compl_symm_apply_of_not_mem {α : Type u} {s : set α} [decidable_pred
 have ↑(⟨x, or.inr hx⟩ : (s ∪ sᶜ : set α)) ∈ sᶜ, from hx,
 by { rw [equiv.set.sum_compl], simpa using set.union_apply_right _ this }
 
-@[simp] lemma set.sum_compl_symm_apply {α : Type*} {s : set α} [decidable_pred s] {x : s} : 
+@[simp] lemma set.sum_compl_symm_apply {α : Type*} {s : set α} [decidable_pred s] {x : s} :
   (equiv.set.sum_compl s).symm x = sum.inl x :=
 by cases x with x hx; exact set.sum_compl_symm_apply_of_mem hx
 
-@[simp] lemma set.sum_compl_symm_apply_compl {α : Type*} {s : set α} 
+@[simp] lemma set.sum_compl_symm_apply_compl {α : Type*} {s : set α}
   [decidable_pred s] {x : sᶜ} : (equiv.set.sum_compl s).symm x = sum.inr x :=
 by cases x with x hx; exact set.sum_compl_symm_apply_of_not_mem hx
 
@@ -1379,33 +1379,30 @@ calc  (s ∪ t : set α) ⊕ (s ∩ t : set α)
 between `sᶜ` and `tᶜ`. -/
 protected def compl {α β : Type*} {s : set α} {t : set β} [decidable_pred s] [decidable_pred t]
   (e₀ : s ≃ t) : {e : α ≃ β // ∀ x : s, e x = e₀ x} ≃ ((sᶜ : set α) ≃ (tᶜ : set β)) :=
-{ to_fun := λ e, subtype_congr e 
-    (λ a, not_congr $ iff.intro 
-      (λ ha, by rw [← subtype.coe_mk a ha, e.prop ⟨a, ha⟩]; exact (e₀ ⟨a, ha⟩).prop)
-      (λ ha, calc a = (e : α ≃ β).symm (e a) : by simp only [symm_apply_apply, coe_fn_coe_base]
-                ... = e₀.symm ⟨e a, ha⟩ : (e : α ≃ β).injective 
-                  (by { rw [e.prop (e₀.symm ⟨e a, ha⟩)],
-                        simp only [apply_symm_apply, subtype.coe_mk] })
-                ... ∈ s : (e₀.symm ⟨_, ha⟩).prop)),
-  inv_fun := λ e₁, 
-    subtype.mk 
+{ to_fun := λ e, subtype_congr e
+    (λ a, not_congr $ iff.symm $ maps_to.mem_iff
+      (λ x hx, by { erw [e.2 ⟨x, hx⟩], apply subtype.coe_prop  })
+      (surj_on.maps_to_compl (λ y hy, ⟨e₀.symm ⟨y, hy⟩, subtype.coe_prop _,
+        by erw [e.2, e₀.apply_symm_apply, subtype.coe_mk]⟩) e.1.injective)),
+  inv_fun := λ e₁,
+    subtype.mk
       (calc α ≃ s ⊕ (sᶜ : set α) : (set.sum_compl s).symm
           ... ≃ t ⊕ (tᶜ : set β) : e₀.sum_congr e₁
           ... ≃ β : set.sum_compl t)
-      (λ x, by simp only [sum.map_inl, trans_apply, sum_congr_apply, 
+      (λ x, by simp only [sum.map_inl, trans_apply, sum_congr_apply,
         set.sum_compl_apply_inl, set.sum_compl_symm_apply]),
-  left_inv := λ e, 
-    begin 
+  left_inv := λ e,
+    begin
       ext x,
       by_cases hx : x ∈ s,
-      { simp only [set.sum_compl_symm_apply_of_mem hx, ←e.prop ⟨x, hx⟩, 
+      { simp only [set.sum_compl_symm_apply_of_mem hx, ←e.prop ⟨x, hx⟩,
           sum.map_inl, sum_congr_apply, trans_apply,
           subtype.coe_mk, set.sum_compl_apply_inl] },
-      { simp only [set.sum_compl_symm_apply_of_not_mem hx, sum.map_inr, 
+      { simp only [set.sum_compl_symm_apply_of_not_mem hx, sum.map_inr,
           subtype_congr_apply, set.sum_compl_apply_inr, trans_apply,
           sum_congr_apply, subtype.coe_mk] },
     end,
-  right_inv := λ e, equiv.ext $ λ x, by simp only [sum.map_inr, subtype_congr_apply, 
+  right_inv := λ e, equiv.ext $ λ x, by simp only [sum.map_inr, subtype_congr_apply,
     set.sum_compl_apply_inr, function.comp_app, sum_congr_apply, equiv.coe_trans,
     subtype.coe_eta, subtype.coe_mk, set.sum_compl_symm_apply_compl] }
 
