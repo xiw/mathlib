@@ -1381,9 +1381,9 @@ protected def compl {α β : Type*} {s : set α} {t : set β} [decidable_pred s]
   (e₀ : s ≃ t) : {e : α ≃ β // ∀ x : s, e x = e₀ x} ≃ ((sᶜ : set α) ≃ (tᶜ : set β)) :=
 { to_fun := λ e, subtype_congr e
     (λ a, not_congr $ iff.symm $ maps_to.mem_iff
-      (λ x hx, by { erw [e.2 ⟨x, hx⟩], apply subtype.coe_prop  })
-      (surj_on.maps_to_compl (λ y hy, ⟨e₀.symm ⟨y, hy⟩, subtype.coe_prop _,
-        by erw [e.2, e₀.apply_symm_apply, subtype.coe_mk]⟩) e.1.injective)),
+      (maps_to_iff_exists_map_subtype.2 ⟨e₀, e.2⟩)
+      (surj_on.maps_to_compl (surj_on_iff_exists_map_subtype.2
+        ⟨t, e₀, subset.refl t, e₀.surjective, e.2⟩) e.1.injective)),
   inv_fun := λ e₁,
     subtype.mk
       (calc α ≃ s ⊕ (sᶜ : set α) : (set.sum_compl s).symm
@@ -1422,7 +1422,7 @@ protected noncomputable def image_of_inj_on {α β} (f : α → β) (s : set α)
 
 /-- If `f` is an injective function, then `s` is equivalent to `f '' s`. -/
 protected noncomputable def image {α β} (f : α → β) (s : set α) (H : injective f) : s ≃ (f '' s) :=
-equiv.set.image_of_inj_on f s (λ x y hx hy hxy, H hxy)
+equiv.set.image_of_inj_on f s (H.inj_on s)
 
 @[simp] theorem image_apply {α β} (f : α → β) (s : set α) (H : injective f) (a h) :
   set.image f s H ⟨a, h⟩ = ⟨f a, mem_image_of_mem _ h⟩ := rfl

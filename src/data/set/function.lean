@@ -106,6 +106,10 @@ subtype.map f h
 @[simp] lemma maps_to.coe_restrict_apply (h : maps_to f s t) (x : s) :
   (h.restrict f s t x : β) = f x := rfl
 
+lemma maps_to_iff_exists_map_subtype : maps_to f s t ↔ ∃ g : s → t, ∀ x : s, f x = g x :=
+⟨λ h, ⟨h.restrict f s t, λ _, rfl⟩,
+  λ ⟨g, hg⟩ x hx, by { erw [hg ⟨x, hx⟩], apply subtype.coe_prop }⟩
+
 theorem maps_to' : maps_to f s t ↔ f '' s ⊆ t :=
 image_subset_iff.symm
 
@@ -167,6 +171,10 @@ theorem maps_to_preimage (f : α → β) (t : set β) : maps_to f (f ⁻¹' t) t
 
 theorem maps_to_range (f : α → β) (s : set α) : maps_to f s (range f) :=
 (maps_to_image f s).mono (subset.refl s) (image_subset_range _ _)
+
+theorem surjective_maps_to_image_restrict (f : α → β) (s : set α) :
+  surjective ((maps_to_image f s).restrict f s (f '' s)) :=
+λ ⟨y, x, hs, hxy⟩, ⟨⟨x, hs⟩, subtype.ext hxy⟩
 
 theorem maps_to.mem_iff (h : maps_to f s t) (hc : maps_to f sᶜ tᶜ) {x} : f x ∈ t ↔ x ∈ s :=
 ⟨λ ht, by_contra $ λ hs, hc hs ht, λ hx, h hx⟩
@@ -236,6 +244,12 @@ lemma inj_on_preimage {B : set (set β)} (hB : B ⊆ powerset (range f)) :
 
 theorem surj_on.subset_range (h : surj_on f s t) : t ⊆ range f :=
 subset.trans h $ image_subset_range f s
+
+lemma surj_on_iff_exists_map_subtype :
+  surj_on f s t ↔ ∃ (t' : set β) (g : s → t'), t ⊆ t' ∧ surjective g ∧ ∀ x : s, f x = g x :=
+⟨λ h, ⟨_, (maps_to_image f s).restrict f s _, h, surjective_maps_to_image_restrict _ _, λ _, rfl⟩,
+  λ ⟨t', g, htt', hg, hfg⟩ y hy, let ⟨x, hx⟩ := hg ⟨y, htt' hy⟩ in
+    ⟨x, x.2, by rw [hfg, hx, subtype.coe_mk]⟩⟩
 
 theorem surj_on_empty (f : α → β) (s : set α) : surj_on f s ∅ := empty_subset _
 
