@@ -86,7 +86,7 @@ begin
     change ∥hξ.equiv_fun x∥ ≤ 0 * ∥x∥,
     rw this,
     simp [norm_nonneg] },
-  { haveI : finite_dimensional 𝕜 E := of_finite_basis hξ,
+  { haveI : finite_dimensional 𝕜 E := of_fintype_basis hξ,
     -- first step: thanks to the inductive assumption, any n-dimensional subspace is equivalent
     -- to a standard space of dimension n, hence it is complete and therefore closed.
     have H₁ : ∀s : submodule 𝕜 E, findim 𝕜 s = n → is_closed (s : set E),
@@ -183,7 +183,7 @@ variables {ι : Type*} [fintype ι]
 def is_basis.constrL {v : ι → E} (hv : is_basis 𝕜 v) (f : ι → F) :
   E →L[𝕜] F :=
 ⟨hv.constr f, begin
-  haveI : finite_dimensional 𝕜 E := finite_dimensional.of_finite_basis hv,
+  haveI : finite_dimensional 𝕜 E := finite_dimensional.of_fintype_basis hv,
   exact (hv.constr f).continuous_of_finite_dimensional,
 end⟩
 
@@ -194,7 +194,7 @@ end⟩
 functions from its basis indexing type to `𝕜`. -/
 def is_basis.equiv_funL {v : ι → E} (hv : is_basis 𝕜 v) : E ≃L[𝕜] (ι → 𝕜) :=
 { continuous_to_fun := begin
-    haveI : finite_dimensional 𝕜 E := finite_dimensional.of_finite_basis hv,
+    haveI : finite_dimensional 𝕜 E := finite_dimensional.of_fintype_basis hv,
     apply linear_map.continuous_of_finite_dimensional,
   end,
   continuous_inv_fun := begin
@@ -258,7 +258,7 @@ begin
   from metric.second_countable_of_countable_discretization
     (λ ε ε_pos, ⟨fin d → ℕ, by apply_instance, this ε ε_pos⟩),
   intros ε ε_pos,
-  obtain ⟨u : ℕ → F, hu : closure (range u) = univ⟩ := exists_dense_seq F,
+  obtain ⟨u : ℕ → F, hu : dense_range u⟩ := exists_dense_seq F,
   obtain ⟨v : fin d → E, hv : is_basis 𝕜 v⟩ := finite_dimensional.fin_basis 𝕜 E,
   obtain ⟨C : ℝ, C_pos : 0 < C,
           hC : ∀ {φ : E →L[𝕜] F} {M : ℝ}, 0 ≤ M → (∀ i, ∥φ (v i)∥ ≤ M) → ∥φ∥ ≤ C * M⟩ := hv.op_norm_le,
@@ -269,7 +269,7 @@ begin
     have : ∀ i, ∃ n, ∥φ (v i) - u n∥ ≤ ε/(2*C),
     { simp only [norm_sub_rev],
       intro i,
-      have : φ (v i) ∈ closure (range u), by simp [hu],
+      have : φ (v i) ∈ closure (range u) := hu _,
       obtain ⟨n, hn⟩ : ∃ n, ∥u n - φ (v i)∥ < ε / (2 * C),
       { rw mem_closure_iff_nhds_basis metric.nhds_basis_ball at this,
         specialize this (ε/(2*C)) hε2C,
