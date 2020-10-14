@@ -17,7 +17,6 @@ variables {α : Type*} {β : Type*} {γ : Type*} {ι : Type*}
 noncomputable theory
 open filter metric
 open_locale topological_space big_operators nnreal
-localized "notation f `→_{`:50 a `}`:0 b := filter.tendsto f (_root_.nhds a) (_root_.nhds b)" in filter
 
 /-- Auxiliary class, endowing a type `α` with a function `norm : α → ℝ`. This class is designed to
 be extended in more interesting classes specifying the properties of the norm. -/
@@ -388,10 +387,10 @@ lemma squeeze_zero_norm {f : γ → α} {g : γ → ℝ} {t₀ : filter γ}
   tendsto f t₀ (𝓝 0) :=
 squeeze_zero_norm' (eventually_of_forall h) h'
 
-lemma lim_norm (x : α) : (λg:α, ∥g - x∥) →_{x} 0 :=
+lemma lim_norm (x : α) : tendsto (λg : α, ∥g - x∥) (𝓝 x) (𝓝 0) :=
 tendsto_iff_norm_tendsto_zero.1 (continuous_iff_continuous_at.1 continuous_id x)
 
-lemma lim_norm_zero : (λg:α, ∥g∥) →_{0} 0 :=
+lemma lim_norm_zero : tendsto (λg : α, ∥g∥) (𝓝 0) (𝓝 0) :=
 by simpa using lim_norm (0:α)
 
 lemma continuous_norm : continuous (λg:α, ∥g∥) :=
@@ -1111,32 +1110,14 @@ open_locale classical
 open finset filter
 variables [normed_group α] [normed_group β]
 
--- Applying a bounded homomorphism commutes with taking an (infinite) sum.
-lemma has_sum_of_bounded_monoid_hom_of_has_sum
-  {f : ι → α} {φ : α →+ β} {x : α} (hf : has_sum f x) (C : ℝ) (hφ : ∀x, ∥φ x∥ ≤ C * ∥x∥) :
-  has_sum (λ (b:ι), φ (f b)) (φ x) :=
-begin
-  unfold has_sum,
-  convert (φ.continuous_of_bound C hφ).continuous_at.tendsto.comp hf,
-  ext s, rw [function.comp_app, finset.sum_hom s φ],
-end
-
-lemma has_sum_of_bounded_monoid_hom_of_summable
-  {f : ι → α} {φ : α →+ β} (hf : summable f) (C : ℝ) (hφ : ∀x, ∥φ x∥ ≤ C * ∥x∥) :
-  has_sum (λ (b:ι), φ (f b)) (φ (∑'b, f b)) :=
-has_sum_of_bounded_monoid_hom_of_has_sum hf.has_sum C hφ
-
 lemma cauchy_seq_finset_iff_vanishing_norm {f : ι → α} :
-  cauchy_seq (λ s : finset ι, ∑ i in s, f i) ↔ ∀ε > (0 : ℝ), ∃s:finset ι, ∀t, disjoint t s → ∥ ∑ i in t, f i ∥ < ε :=
+  cauchy_seq (λ s : finset ι, ∑ i in s, f i) ↔
+    ∀ε > (0 : ℝ), ∃s:finset ι, ∀t, disjoint t s → ∥ ∑ i in t, f i ∥ < ε :=
 begin
-  simp only [cauchy_seq_finset_iff_vanishing, metric.mem_nhds_iff, exists_imp_distrib],
-  split,
-  { assume h ε hε, refine h {x | ∥x∥ < ε} ε hε _, rw [ball_0_eq ε] },
-  { assume h s ε hε hs,
-    rcases h ε hε with ⟨t, ht⟩,
-    refine ⟨t, assume u hu, hs _⟩,
-    rw [ball_0_eq],
-    exact ht u hu }
+  rw [cauchy_seq_finset_iff_vanishing, nhds_basis_ball.forall_iff],
+  { simp only [ball_0_eq, set.mem_set_of_eq] },
+  { rintros s t hst ⟨s', hs'⟩,
+    exact ⟨s', λ t' ht', hst $ hs' _ ht'⟩ }
 end
 
 lemma summable_iff_vanishing_norm [complete_space α] {f : ι → α} :
