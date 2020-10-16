@@ -82,7 +82,9 @@ instance : canonically_ordered_comm_semiring ℕ :=
   eq_zero_or_eq_zero_of_mul_eq_zero   := assume a b, nat.eq_zero_of_mul_eq_zero,
   bot               := 0,
   bot_le            := nat.zero_le,
+  sub_le_left_iff_le_add := λ a b c, sorry,
   .. nat.nontrivial,
+  .. nat.has_sub,
   .. (infer_instance : ordered_add_comm_monoid ℕ),
   .. (infer_instance : linear_ordered_semiring ℕ),
   .. (infer_instance : comm_semiring ℕ) }
@@ -363,9 +365,7 @@ by rw [add_comm, add_one, pred_succ]
 /-! ### `sub` -/
 
 protected theorem le_sub_add (n m : ℕ) : n ≤ n - m + m :=
-or.elim (le_total n m)
-  (assume : n ≤ m, begin rw [sub_eq_zero_of_le this, zero_add], exact this end)
-  (assume : m ≤ n, begin rw (nat.sub_add_cancel this) end)
+le_sub_add
 
 theorem sub_add_eq_max (n m : ℕ) : n - m + m = max n m :=
 eq_max (nat.le_sub_add _ _) (le_add_left _ _) $ λ k h₁ h₂,
@@ -381,7 +381,7 @@ theorem sub_add_min (n m : ℕ) : n - m + min n m = n :=
   (λ h, by rw [min_eq_right h, nat.sub_add_cancel h])
 
 protected theorem add_sub_cancel' {n m : ℕ} (h : m ≤ n) : m + (n - m) = n :=
-by rw [add_comm, nat.sub_add_cancel h]
+add_sub_eq h
 
 protected theorem sub_eq_of_eq_add (h : k = m + n) : k - m = n :=
 begin rw [h, nat.add_sub_cancel_left] end
@@ -445,10 +445,10 @@ protected theorem add_lt_of_lt_sub_left (h : m < n - k) : k + m < n :=
 by rw add_comm; exact nat.add_lt_of_lt_sub_right h
 
 protected theorem le_add_of_sub_le_right : n - k ≤ m → n ≤ m + k :=
-le_imp_le_of_lt_imp_lt nat.lt_sub_right_of_add_lt
+sub_le_right_iff_le_add.mp
 
 protected theorem le_add_of_sub_le_left : n - k ≤ m → n ≤ k + m :=
-le_imp_le_of_lt_imp_lt nat.lt_sub_left_of_add_lt
+sub_le_left_iff_le_add.mp
 
 protected theorem lt_add_of_sub_lt_right : n - k < m → n < m + k :=
 lt_imp_lt_of_le_imp_le nat.le_sub_right_of_add_le
@@ -484,11 +484,11 @@ protected theorem lt_sub_left_iff_add_lt : n < k - m ↔ m + n < k :=
 protected theorem lt_sub_right_iff_add_lt : m < k - n ↔ m + n < k :=
 by rw [nat.lt_sub_left_iff_add_lt, add_comm]
 
-theorem sub_le_left_iff_le_add : m - n ≤ k ↔ m ≤ n + k :=
-le_iff_le_iff_lt_iff_lt.2 nat.lt_sub_left_iff_add_lt
+protected theorem sub_le_left_iff_le_add : m - n ≤ k ↔ m ≤ n + k :=
+sub_le_left_iff_le_add
 
-theorem sub_le_right_iff_le_add : m - k ≤ n ↔ m ≤ n + k :=
-by rw [nat.sub_le_left_iff_le_add, add_comm]
+protected theorem sub_le_right_iff_le_add : m - k ≤ n ↔ m ≤ n + k :=
+sub_le_right_iff_le_add
 
 protected theorem sub_lt_right_iff_lt_add (H : k ≤ m) : m - k < n ↔ m < n + k :=
 by rw [nat.sub_lt_left_iff_lt_add H, add_comm]

@@ -517,16 +517,28 @@ end with_bot
   in which the ordering coincides with the divisibility relation,
   which is to say, `a ≤ b` iff there exists `c` with `b = a + c`.
   This is satisfied by the natural numbers, for example, but not
-  the integers or other ordered groups. -/
+  the integers or other ordered groups.
+
+  In a canonically ordered additive monoid we can usually define a truncated subtraction.
+  `a - b` is defined as the least `c` such that `a ≤ b + c`.
+  Many lemmas that hold for this subtraction also hold for the corresponding -/
 @[protect_proj]
-class canonically_ordered_add_monoid (α : Type*) extends ordered_add_comm_monoid α, order_bot α :=
-(le_iff_exists_add : ∀a b:α, a ≤ b ↔ ∃c, b = a + c)
+class canonically_ordered_add_monoid (α : Type*) extends ordered_add_comm_monoid α, order_bot α,
+  has_sub α :=
+(le_iff_exists_add : ∀ a b : α, a ≤ b ↔ ∃c, b = a + c)
+(sub_le_left_iff_le_add : ∀ a b c : α, a - b ≤ c ↔ a ≤ b + c)
 
 section canonically_ordered_add_monoid
 variables [canonically_ordered_add_monoid α] {a b c d : α}
 
 lemma le_iff_exists_add : a ≤ b ↔ ∃c, b = a + c :=
 canonically_ordered_add_monoid.le_iff_exists_add a b
+
+lemma sub_le_left_iff_le_add : a - b ≤ c ↔ a ≤ b + c :=
+canonically_ordered_add_monoid.sub_le_left_iff_le_add a b c
+
+theorem sub_le_right_iff_le_add : a - b ≤ c ↔ a ≤ c + b :=
+by rw [sub_le_left_iff_le_add, add_comm]
 
 @[simp] lemma zero_le (a : α) : 0 ≤ a := le_iff_exists_add.mpr ⟨a, by simp⟩
 
@@ -538,19 +550,34 @@ add_eq_zero_iff' (zero_le _) (zero_le _)
 
 @[simp] lemma le_zero_iff_eq : a ≤ 0 ↔ a = 0 :=
 iff.intro
-  (assume h, le_antisymm h (zero_le a))
-  (assume h, h ▸ le_refl a)
+  (λ h, le_antisymm h (zero_le a))
+  (λ h, h ▸ le_refl a)
 
 lemma zero_lt_iff_ne_zero : 0 < a ↔ a ≠ 0 :=
-iff.intro ne_of_gt $ assume hne, lt_of_le_of_ne (zero_le _) hne.symm
+⟨ne_of_gt, λ hne, lt_of_le_of_ne (zero_le _) hne.symm⟩
 
-lemma exists_pos_add_of_lt (h : a < b) : ∃ c > 0, a + c = b :=
+lemma le_add_sub : b ≤ a + (b - a) :=
+sub_le_left_iff_le_add.mp le_rfl
+
+lemma le_sub_add : b ≤ (b - a) + a :=
+by { rw [add_comm], exact le_add_sub }
+
+lemma add_sub_eq (h : a ≤ b) : a + (b - a) = b :=
 begin
-  obtain ⟨c, hc⟩ := le_iff_exists_add.1 h.le,
-  refine ⟨c, zero_lt_iff_ne_zero.2 _, hc.symm⟩,
-  rintro rfl,
-  simpa [hc, lt_irrefl] using h
+  obtain ⟨c, hc⟩ := le_iff_exists_add.1 h,
+  refine le_antisymm _ le_add_sub,
+  conv_rhs { rw [hc] },
+  apply add_le_add_left (sub_le_left_iff_le_add.mpr hc.le)
 end
+
+lemma sub_add_eq (h : a ≤ b) : b - a + a = b :=
+by { rw [add_comm], exact add_sub_eq h }
+
+lemma add_sub_eq_iff : a + (b - a) = b ↔ a ≤ b :=
+⟨λ h, le_iff_exists_add.mpr ⟨b - a, h.symm⟩, add_sub_eq⟩
+
+lemma sub_add_eq_iff : b - a + a = b ↔ a ≤ b :=
+by { rw [add_comm], exact add_sub_eq_iff }
 
 lemma le_add_left (h : a ≤ c) : a ≤ b + c :=
 calc a = 0 + a : by simp
@@ -560,27 +587,256 @@ lemma le_add_right (h : a ≤ b) : a ≤ b + c :=
 calc a = a + 0 : by simp
   ... ≤ b + c : add_le_add h (zero_le _)
 
+namespace canonically_ordered
+
+lemma sub_pos_of_lt (h : a < b) : 0 < b - a :=
+begin
+  refine zero_lt_iff_ne_zero.2 (λ h2, _),
+  have := add_sub_eq_iff.mpr h.le,
+  rw [h2, add_zero] at this,
+  exact h.ne this
+end
+
+lemma sub_eq_zero : a - b = 0 ↔ a ≤ b :=
+by rw [← le_zero_iff_eq, sub_le_left_iff_le_add, add_zero]
+
+lemma sub_self : a - a = 0 :=
+sub_eq_zero.mpr le_rfl
+
+lemma sub_le_self : a - b ≤ a :=
+sub_le_left_iff_le_add.mpr $ le_add_left le_rfl
+
+lemma sub_zero : a - 0 = a :=
+le_antisymm sub_le_self $ le_add_sub.trans_eq $ zero_add _
+
+lemma sub_le_sub_right (h : a ≤ b) (c : α) : a - c ≤ b - c :=
+sub_le_left_iff_le_add.mpr $ h.trans le_add_sub
+
+lemma sub_le_sub_left (h : a ≤ b) (c : α) : c - b ≤ c - a :=
+sub_le_left_iff_le_add.mpr $ le_add_sub.trans $ add_le_add_right h _
+
+lemma sub_le_sub' (hab : a ≤ b) (hcd : c ≤ d) : a - d ≤ b - c :=
+(sub_le_sub_right hab _).trans $ sub_le_sub_left hcd _
+
+lemma sub_add_eq_sub_sub : a - (b + c) = a - b - c :=
+begin
+  refine le_antisymm (sub_le_left_iff_le_add.mpr _)
+    (sub_le_left_iff_le_add.mpr $ sub_le_left_iff_le_add.mpr _),
+  { rw [add_assoc], refine le_trans le_add_sub (add_le_add_left le_add_sub _) },
+  rw [← add_assoc], apply le_add_sub
+end
+
+lemma sub_add_eq_sub_sub_swap : a - (b + c) = a - c - b :=
+by { rw [add_comm], exact sub_add_eq_sub_sub }
+
+lemma sub_right_comm : a - b - c = a - c - b :=
+by simp_rw [← sub_add_eq_sub_sub, add_comm]
+
+
+end canonically_ordered
+
+
+
+-- namespace canonically_ordered
+
+-- theorem sub_eq_of_eq_add (h : a = b + c) : a - b = c :=
+-- le_antisymm (sub_le_iff.mpr h.le) $ by { subst h, have := le_refl (b + c - b), rw [sub_le_iff] at this, sorry }
+
+-- lemma eq_sub_of_add_eq (h : a + c = b) : a = b - c :=
+-- _
+
+-- lemma add_sub_cancel : a + b - b = a :=
+-- _
+
+-- lemma add_sub_cancel' : a + b - a = b :=
+-- _
+
+-- lemma add_sub_add_right_eq_sub : (a + c) - (b + c) = a - b :=
+-- _
+
+
+-- lemma le_sub_left_of_add_le' (h : a + b ≤ c) : b ≤ c - a :=
+-- _
+
+-- lemma le_sub_right_of_add_le' (h : a + b ≤ c) : a ≤ c - b :=
+-- _
+
+-- lemma le_sub_iff (h : a ≤ c) : b ≤ c - a ↔ a + b ≤ c :=
+-- ⟨λ h, _, λ h, _⟩
+
+-- end canonically_ordered
+
+
+-- lemma sub_le_sub_add_sub : a - c ≤ (a - b) + (b - c) :=
+-- _
+
+-- @[simp] lemma add_le_add_add_sub : a + b ≤ (a + c) + (b - c) :=
+-- _
+
+-- @[simp] lemma sub_add_add_cancel : a + b ≤ (a - c) + (b + c) :=
+-- _
+
+-- @[simp] lemma add_sub_sub_cancel : (a + b) - (a - c) = b + c :=
+-- _
+
+-- @[simp] lemma sub_sub_sub_cancel_left : (c - a) - (c - b) = b - a :=
+-- _
+
+-- lemma sub_eq_sub_iff_sub_eq_sub : a - b = c - d ↔ a - c = b - d :=
+-- _
+
+-- lemma sub_le_of_sub_le (h : a - b ≤ c) : a - c ≤ b :=
+-- _
+
+-- lemma add_lt_of_lt_sub_left (h : b < c - a) : a + b < c :=
+-- begin
+
+-- end
+
+-- lemma lt_sub_left_of_add_lt (h : a + b < c) : b < c - a :=
+-- begin
+
+-- end
+
+-- lemma add_lt_of_lt_sub_right (h : a < c - b) : a + b < c :=
+-- begin
+
+-- end
+
+-- lemma lt_sub_right_of_add_lt (h : a + b < c) : a < c - b :=
+-- begin
+--   have h := add_lt_add_right h (-b),
+--   rwa add_neg_cancel_right at h
+-- end
+
+-- lemma lt_add_of_sub_left_lt (h : a - b < c) : a < b + c :=
+-- begin
+--   have h := add_lt_add_right h b,
+--   rwa [sub_add_cancel, add_comm] at h
+-- end
+
+-- lemma sub_left_lt_of_lt_add (h : a < b + c) : a - b < c :=
+-- begin
+--   have h := add_lt_add_right h (-b),
+--   rwa [add_comm b c, add_neg_cancel_right] at h
+-- end
+
+-- lemma lt_add_of_sub_right_lt (h : a - c < b) : a < b + c :=
+-- begin
+--   have h := add_lt_add_right h c,
+--   rwa sub_add_cancel at h
+-- end
+
+-- lemma sub_right_lt_of_lt_add (h : a < b + c) : a - c < b :=
+-- begin
+--   have h := add_lt_add_right h (-c),
+--   rwa add_neg_cancel_right at h
+-- end
+
+-- lemma sub_lt_of_sub_lt (h : a - b < c) : a - c < b :=
+-- sub_left_lt_of_lt_add (lt_add_of_sub_right_lt h)
+
+-- lemma sub_lt_sub_left (h : a < b) (c : α) : c - b < c - a :=
+-- add_lt_add_left (neg_lt_neg h) c
+
+-- lemma sub_lt_sub_right (h : a < b) (c : α) : a - c < b - c :=
+-- add_lt_add_right h (-c)
+
+-- lemma sub_lt_sub (hab : a < b) (hcd : c < d) : a - d < b - c :=
+-- add_lt_add hab (neg_lt_neg hcd)
+
+-- lemma sub_lt_sub_of_le_of_lt (hab : a ≤ b) (hcd : c < d) : a - d < b - c :=
+-- add_lt_add_of_le_of_lt hab (neg_lt_neg hcd)
+
+-- lemma sub_lt_sub_of_lt_of_le (hab : a < b) (hcd : c ≤ d) : a - d < b - c :=
+-- add_lt_add_of_lt_of_le hab (neg_le_neg hcd)
+
+
+-- lemma le_sub_iff_add_le' : b ≤ c - a ↔ a + b ≤ c :=
+-- by rw [sub_eq_add_neg, add_comm, le_neg_add_iff_add_le]
+
+-- lemma le_sub_iff_add_le : a ≤ c - b ↔ a + b ≤ c :=
+-- by rw [le_sub_iff_add_le', add_comm]
+
+-- lemma sub_le_iff_le_add' : a - b ≤ c ↔ a ≤ b + c :=
+-- by rw [sub_eq_add_neg, add_comm, neg_add_le_iff_le_add]
+
+-- lemma sub_le_iff_le_add : a - c ≤ b ↔ a ≤ b + c :=
+-- by rw [sub_le_iff_le_add', add_comm]
+
+-- @[simp] lemma neg_le_sub_iff_le_add : -b ≤ a - c ↔ c ≤ a + b :=
+-- le_sub_iff_add_le.trans neg_add_le_iff_le_add'
+
+-- lemma neg_le_sub_iff_le_add' : -a ≤ b - c ↔ c ≤ a + b :=
+-- by rw [neg_le_sub_iff_le_add, add_comm]
+
+-- lemma sub_le : a - b ≤ c ↔ a - c ≤ b :=
+-- sub_le_iff_le_add'.trans sub_le_iff_le_add.symm
+
+-- theorem le_sub : a ≤ b - c ↔ c ≤ b - a :=
+-- le_sub_iff_add_le'.trans le_sub_iff_add_le.symm
+
+-- lemma lt_sub_iff_add_lt' : b < c - a ↔ a + b < c :=
+-- by rw [sub_eq_add_neg, add_comm, lt_neg_add_iff_add_lt]
+
+-- lemma lt_sub_iff_add_lt : a < c - b ↔ a + b < c :=
+-- by rw [lt_sub_iff_add_lt', add_comm]
+
+-- lemma sub_lt_iff_lt_add' : a - b < c ↔ a < b + c :=
+-- by rw [sub_eq_add_neg, add_comm, neg_add_lt_iff_lt_add]
+
+-- lemma sub_lt_iff_lt_add : a - c < b ↔ a < b + c :=
+-- by rw [sub_lt_iff_lt_add', add_comm]
+
+-- @[simp] lemma neg_lt_sub_iff_lt_add : -b < a - c ↔ c < a + b :=
+-- lt_sub_iff_add_lt.trans neg_add_lt_iff_lt_add_right
+
+-- lemma neg_lt_sub_iff_lt_add' : -a < b - c ↔ c < a + b :=
+-- by rw [neg_lt_sub_iff_lt_add, add_comm]
+
+-- lemma sub_lt : a - b < c ↔ a - c < b :=
+-- sub_lt_iff_lt_add'.trans sub_lt_iff_lt_add.symm
+
+-- theorem lt_sub : a < b - c ↔ c < b - a :=
+-- lt_sub_iff_add_lt'.trans lt_sub_iff_add_lt.symm
+
+-- lemma sub_le_self_iff (a : α) {b : α} : a - b ≤ a ↔ 0 ≤ b :=
+-- sub_le_iff_le_add'.trans (le_add_iff_nonneg_left _)
+
+-- lemma sub_lt_self_iff (a : α) {b : α} : a - b < a ↔ 0 < b :=
+-- sub_lt_iff_lt_add'.trans (lt_add_iff_pos_left _)
+
 local attribute [semireducible] with_zero
 
-instance with_zero.canonically_ordered_add_monoid :
-  canonically_ordered_add_monoid (with_zero α) :=
-{ le_iff_exists_add := λ a b, begin
-    cases a with a,
-    { exact iff_of_true bot_le ⟨b, (zero_add b).symm⟩ },
-    cases b with b,
-    { exact iff_of_false
-        (mt (le_antisymm bot_le) (by simp))
-        (λ ⟨c, h⟩, by cases c; cases h) },
-    { simp [le_iff_exists_add, -add_comm],
-      split; intro h; rcases h with ⟨c, h⟩,
-      { exact ⟨some c, congr_arg some h⟩ },
-      { cases c; cases h,
-        { exact ⟨_, (add_zero _).symm⟩ },
-        { exact ⟨_, rfl⟩ } } }
-  end,
-  bot    := 0,
-  bot_le := assume a a' h, option.no_confusion h,
-  .. with_zero.ordered_add_comm_monoid zero_le }
+
+-- TODO
+-- instance with_zero.canonically_ordered_add_monoid [decidable_rel ((≤) : α → α → Prop)] :
+--   canonically_ordered_add_monoid (with_zero α) :=
+-- { le_iff_exists_add := λ a b, begin
+--     cases a with a,
+--     { exact iff_of_true bot_le ⟨b, (zero_add b).symm⟩ },
+--     cases b with b,
+--     { exact iff_of_false
+--         (mt (le_antisymm bot_le) (by simp))
+--         (λ ⟨c, h⟩, by cases c; cases h) },
+--     { simp [le_iff_exists_add, -add_comm],
+--       split; intro h; rcases h with ⟨c, h⟩,
+--       { exact ⟨some c, congr_arg some h⟩ },
+--       { cases c; cases h,
+--         { exact ⟨_, (add_zero _).symm⟩ },
+--         { exact ⟨_, rfl⟩ } } }
+--   end,
+--   bot    := 0,
+--   bot_le := assume a a' h, option.no_confusion h,
+--   sub := λ a' b', a'.bind $ λ a, b'.elim a $ λ b, if a ≤ b then none else some (a - b),
+--   sub_le_left_iff_le_add := λ a b c, begin
+--       cases a with a,
+--       { exact iff_of_true bot_le bot_le },
+--       cases b with b,
+--       { convert iff.rfl, exact zero_add c },
+
+--     end,
+--   .. with_zero.ordered_add_comm_monoid zero_le }
 
 instance with_top.canonically_ordered_add_monoid : canonically_ordered_add_monoid (with_top α) :=
 { le_iff_exists_add := assume a b,
@@ -594,6 +850,18 @@ instance with_top.canonically_ordered_add_monoid : canonically_ordered_add_monoi
       { exact assume h, match b, h with _, ⟨some c, rfl⟩ := ⟨_, rfl⟩ end }
     end
   | none, some b := show (⊤ : with_top α) ≤ b ↔ ∃c:with_top α, ↑b = ⊤ + c, by simp
+  end,
+  sub := λ a' b', b'.elim 0 $ λ b, a'.elim ⊤ $ λ a, some (a - b),
+  sub_le_left_iff_le_add := λ a b c, begin
+      cases b with b,
+      { refine iff_of_true _ (le_top.trans_eq with_top.top_add.symm),
+        cases c with c, exact le_top, exact with_top.some_le_some.mpr (zero_le c) },
+      cases a with a,
+      { refine top_le_iff.trans (iff.trans _ top_le_iff.symm), rw [with_top.add_eq_top],
+        simp [←with_top.none_eq_top] },
+      cases c with c,
+      { exact iff_of_true le_top (le_top.trans_eq with_top.add_top.symm) },
+      refine with_top.some_le_some.trans (sub_le_left_iff_le_add.trans with_top.some_le_some.symm)
   end,
   .. with_top.order_bot,
   .. with_top.ordered_add_comm_monoid }

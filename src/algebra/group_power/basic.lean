@@ -502,12 +502,12 @@ namespace canonically_ordered_semiring
 variable [canonically_ordered_comm_semiring R]
 
 theorem pow_pos {a : R} (H : 0 < a) : ∀ n : ℕ, 0 < a ^ n
-| 0     := canonically_ordered_semiring.zero_lt_one
-| (n+1) := canonically_ordered_semiring.mul_pos.2 ⟨H, pow_pos n⟩
+| 0     := canonically_ordered.zero_lt_one
+| (n+1) := canonically_ordered.mul_pos.2 ⟨H, pow_pos n⟩
 
 lemma pow_le_pow_of_le_left {a b : R} (hab : a ≤ b) : ∀ i : ℕ, a^i ≤ b^i
 | 0     := by simp
-| (k+1) := canonically_ordered_semiring.mul_le_mul hab (pow_le_pow_of_le_left k)
+| (k+1) := canonically_ordered.mul_le_mul hab (pow_le_pow_of_le_left k)
 
 theorem one_le_pow_of_one_le {a : R} (H : 1 ≤ a) (n : ℕ) : 1 ≤ a ^ n :=
 by simpa only [one_pow] using pow_le_pow_of_le_left H n

@@ -885,7 +885,7 @@ class canonically_ordered_comm_semiring (α : Type*) extends
   canonically_ordered_add_monoid α, comm_semiring α, nontrivial α :=
 (eq_zero_or_eq_zero_of_mul_eq_zero : ∀ a b : α, a * b = 0 → a = 0 ∨ b = 0)
 
-namespace canonically_ordered_semiring
+namespace canonically_ordered
 variables [canonically_ordered_comm_semiring α] {a b : α}
 
 open canonically_ordered_add_monoid (le_iff_exists_add)
@@ -915,7 +915,7 @@ lemma zero_lt_one : (0:α) < 1 := (zero_le 1).lt_of_ne zero_ne_one
 lemma mul_pos : 0 < a * b ↔ (0 < a) ∧ (0 < b) :=
 by simp only [zero_lt_iff_ne_zero, ne.def, mul_eq_zero, not_or_distrib]
 
-end canonically_ordered_semiring
+end canonically_ordered
 
 namespace with_top
 
